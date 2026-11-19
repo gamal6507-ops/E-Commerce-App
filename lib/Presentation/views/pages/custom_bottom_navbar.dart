@@ -4,8 +4,8 @@ import 'package:e_commerce_app/Presentation/views/pages/home_page.dart';
 import 'package:e_commerce_app/Presentation/views/pages/profile_page.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:persistent_bottom_nav_bar_v2/persistent_bottom_nav_bar_v2.dart';
 
 class CustomBottomNavbar extends StatefulWidget {

@@ -4,7 +4,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/notifications_sheet.da
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FavoritesPage extends StatelessWidget {
@@ -78,11 +78,12 @@ class FavoritesPage extends StatelessWidget {
                       Text(
                         context.tr('favorites_empty'),
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium!
-                            .copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -112,10 +113,7 @@ class FavoritesPage extends StatelessWidget {
                   return InkWell(
                     borderRadius: BorderRadius.circular(18),
                     onTap: () {
-                      Navigator.of(
-                        context,
-                        rootNavigator: true,
-                      ).pushNamed(
+                      Navigator.of(context, rootNavigator: true).pushNamed(
                         AppRoute.productDetailsRoute,
                         arguments: item.id,
                       );
@@ -235,15 +233,16 @@ class FavoritesPage extends StatelessWidget {
                             item.name,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium!
-                                .copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium!.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '\$${item.price.toStringAsFixed(2)}',
+                            'EGP ${item.price.toStringAsFixed(2)}',
                             style: Theme.of(
                               context,
                             ).textTheme.titleMedium!.copyWith(

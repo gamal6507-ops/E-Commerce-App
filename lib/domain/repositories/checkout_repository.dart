@@ -3,15 +3,15 @@ import 'package:e_commerce_app/domain/entities/location.dart';
 import 'package:e_commerce_app/domain/entities/payment_card.dart';
 
 abstract class CheckoutRepository {
+  Future<bool> receiptExists(String requestId);
+  Future<Map<String, dynamic>> quote(String addressId);
   Future<void> setNewCard(String userId, PaymentCard paymentCard);
   Future<void> deletePaymentCard(String userId, String paymentId);
   Future<List<PaymentCard>> fetchPaymentMethods(String userId);
-  Future<PaymentCard> fetchSinglePaymentMethod(
-    String userId,
-    String paymentId,
-  );
+  Future<PaymentCard> fetchSinglePaymentMethod(String userId, String paymentId);
   Future<List<Map<String, dynamic>>> fetchOrders(String userId);
-  Future<void> placeOrder({
+  Future<Map<String, dynamic>> placeOrder({
+    required String requestId,
     required String userId,
     required List<CartItem> items,
     required double subtotal,

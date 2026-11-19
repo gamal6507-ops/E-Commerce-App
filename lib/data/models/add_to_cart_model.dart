@@ -21,6 +21,8 @@ class AddToCartModel extends CartItem {
               imgUrl: product.imgUrl,
               description: product.description,
               price: product.price,
+              requiresSize: product.requiresSize,
+              stock: product.stock,
               isFavorite: product.isFavorite,
               category: product.category,
               averageRate: product.averageRate,

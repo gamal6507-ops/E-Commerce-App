@@ -1,5 +1,5 @@
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class EmptyListTile extends StatelessWidget {
   const EmptyListTile({
@@ -57,16 +57,18 @@ class EmptyListTile extends StatelessWidget {
                   color: titleColor ?? defaultTextColor,
                 ),
               ),
-              subtitle: subtitle != null
-                  ? Text(
-                      subtitle!,
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.grey1,
-                      ),
-                    )
-                  : null,
+              subtitle:
+                  subtitle != null
+                      ? Text(
+                        subtitle!,
+                        style: TextStyle(
+                          color:
+                              isDark
+                                  ? AppColors.textSecondaryDark
+                                  : AppColors.grey1,
+                        ),
+                      )
+                      : null,
               trailing: trailingIcon,
             ),
           ),

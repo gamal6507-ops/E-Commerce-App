@@ -7,6 +7,8 @@ class ProductItemModel extends Product {
     required super.imgUrl,
     super.description,
     required super.price,
+    super.requiresSize,
+    super.stock,
     super.isFavorite,
     required super.category,
     super.averageRate,
@@ -20,6 +22,8 @@ class ProductItemModel extends Product {
     result.addAll({'imgUrl': imgUrl});
     result.addAll({'description': description});
     result.addAll({'price': price});
+    result.addAll({'requiresSize': requiresSize});
+    result.addAll({'stock': stock});
     result.addAll({'category': category});
     result.addAll({'averageRate': averageRate});
 
@@ -33,6 +37,8 @@ class ProductItemModel extends Product {
       imgUrl: map['imgUrl'] ?? '',
       description: map['description'] ?? '',
       price: map['price']?.toDouble() ?? 0.0,
+      requiresSize: map['requiresSize'] == true,
+      stock: (map['stock'] as num?)?.toInt() ?? 0,
       category: map['category'] ?? '',
       averageRate: map['averageRate']?.toDouble() ?? 0.0,
     );
@@ -76,7 +82,8 @@ List<ProductItemModel> dummyProducts = [
   const ProductItemModel(
     id: '16',
     name: 'Fresh Red Apples',
-    imgUrl: 'https://cdn.dummyjson.com/product-images/groceries/apple/thumbnail.webp',
+    imgUrl:
+        'https://cdn.dummyjson.com/product-images/groceries/apple/thumbnail.webp',
     description:
         'Crisp hand-picked organic red apples packed fresh for daily snacking and healthy recipes.',
     price: 3.49,

@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:image_picker/image_picker.dart';
 
 class UserAvatar extends StatelessWidget {
@@ -159,7 +159,9 @@ Future<void> showProfilePhotoPickerSheet(
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Selected image is too large, please choose another.'),
+              content: Text(
+                'Selected image is too large, please choose another.',
+              ),
             ),
           );
         }
@@ -168,9 +170,9 @@ Future<void> showProfilePhotoPickerSheet(
       onPhotoSelected(encoded);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not pick image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not pick image: $e')));
       }
     }
   }
@@ -301,4 +303,3 @@ Future<void> showProfilePhotoPickerSheet(
     },
   );
 }
-

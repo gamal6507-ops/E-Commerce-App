@@ -22,12 +22,15 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
 
   ProductSize? selectedSize;
   int quantity = 1;
+  int _stock = 0;
 
   Future<void> getProductDetails(String id) async {
     emit(ProductDetailsLoading());
     try {
       final selectedProduct = await _productDetailsRepository
           .fetchProductDetails(id);
+      _stock = selectedProduct.stock;
+      selectedSize = selectedProduct.requiresSize ? null : ProductSize.none;
       if (isClosed) return;
       emit(ProductDetailsLoaded(product: selectedProduct));
     } catch (e) {
@@ -55,6 +58,9 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
     try {
       final selectedProduct = await _productDetailsRepository
           .fetchProductDetails(productId);
+      if (selectedProduct.stock < quantity) {
+        throw Exception('Insufficient stock');
+      }
       final cartItem = CartItem(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         product: selectedProduct,
@@ -71,6 +77,7 @@ class ProductDetailsCubit extends Cubit<ProductDetailsState> {
   }
 
   void incrementCounter(String productId) {
+    if (quantity >= 100 || quantity >= _stock) return;
     quantity++;
     emit(QuantityCounterLoaded(value: quantity));
   }

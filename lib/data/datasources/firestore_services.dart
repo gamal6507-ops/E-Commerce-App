@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 class FirestoreServices {
   // Singleton
@@ -14,7 +13,6 @@ class FirestoreServices {
     required Map<String, dynamic> data,
   }) async {
     final reference = firestore.doc(path);
-    debugPrint('$path: $data');
     await reference.set(data);
   }
 
@@ -23,13 +21,11 @@ class FirestoreServices {
     required Map<String, dynamic> data,
   }) async {
     final reference = firestore.doc(path);
-    debugPrint('Update $path: $data');
     await reference.update(data);
   }
 
   Future<void> deleteData({required String path}) async {
     final reference = firestore.doc(path);
-    debugPrint('delete: $path');
     await reference.delete();
   }
 

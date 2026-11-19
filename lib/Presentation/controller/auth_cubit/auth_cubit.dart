@@ -61,7 +61,6 @@ class AuthCubit extends Cubit<AuthState> {
     final userData = AppUser(
       id: userId,
       username: username,
-      password: password,
       email: email,
       createdAt: DateTime.now().toIso8601String(),
     );

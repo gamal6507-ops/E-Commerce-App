@@ -9,6 +9,10 @@ environment:
   sdk: ^3.7.2
 
 dependencies:
+  material_ui: ^1.11.0
+  cupertino_ui: ^1.1.6
+  http: ^1.6.0
+  url_launcher: ^6.3.2
   cached_network_image: ^3.4.1
   carousel_slider: ^5.1.2
   cupertino_icons: ^1.0.8

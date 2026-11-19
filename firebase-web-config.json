@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "result": {
+    "fileName": "firebase-js-config.json",
+    "fileContents": "{\n  \"projectId\": \"verve-store-gamal6507\",\n  \"appId\": \"1:1076199940056:web:c036cb16ebf44edab1dcad\",\n  \"storageBucket\": \"verve-store-gamal6507.firebasestorage.app\",\n  \"apiKey\": \"AIzaSyAwWnyZ7OireyRT-eyOKlD3iwJGSXylGnE\",\n  \"authDomain\": \"verve-store-gamal6507.firebaseapp.com\",\n  \"messagingSenderId\": \"1076199940056\",\n  \"projectNumber\": \"1076199940056\",\n  \"version\": \"2\"\n}",
+    "sdkConfig": {
+      "projectId": "verve-store-gamal6507",
+      "appId": "1:1076199940056:web:c036cb16ebf44edab1dcad",
+      "storageBucket": "verve-store-gamal6507.firebasestorage.app",
+      "apiKey": "AIzaSyAwWnyZ7OireyRT-eyOKlD3iwJGSXylGnE",
+      "authDomain": "verve-store-gamal6507.firebaseapp.com",
+      "messagingSenderId": "1076199940056",
+      "projectNumber": "1076199940056",
+      "version": "2"
+    }
+  }
+}

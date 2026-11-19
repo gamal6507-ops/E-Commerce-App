@@ -3,7 +3,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/cart_item_widget.dart'
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dash/flutter_dash.dart';
 
@@ -34,10 +34,7 @@ class CartPage extends StatelessWidget {
                 Navigator.of(
                   context,
                   rootNavigator: true,
-                ).pushNamedAndRemoveUntil(
-                  AppRoute.homeRoute,
-                  (route) => false,
-                );
+                ).pushNamedAndRemoveUntil(AppRoute.homeRoute, (route) => false);
               }
             },
             icon: Icon(
@@ -89,11 +86,12 @@ class CartPage extends StatelessWidget {
                               const SizedBox(height: 16),
                               Text(
                                 context.tr('cart_empty'),
-                                style: Theme.of(context).textTheme.titleMedium!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
-                                    ),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleMedium!.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               Text(
@@ -112,12 +110,17 @@ class CartPage extends StatelessWidget {
                           child: RefreshIndicator(
                             onRefresh: () => cubit.getCartItems(),
                             child: ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                16,
+                                16,
+                                20,
+                              ),
                               itemCount: cartItems.length,
                               itemBuilder:
-                                   (context, index) => CartItemWidget(
-                                     cartItem: cartItems[index],
-                                   ),
+                                  (context, index) => CartItemWidget(
+                                    cartItem: cartItems[index],
+                                  ),
                               separatorBuilder:
                                   (_, __) => const SizedBox(height: 14),
                             ),
@@ -130,9 +133,7 @@ class CartPage extends StatelessWidget {
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(24),
                             ),
-                            border: Border(
-                              top: BorderSide(color: borderColor),
-                            ),
+                            border: Border(top: BorderSide(color: borderColor)),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(
@@ -250,7 +251,7 @@ class CartPage extends StatelessWidget {
             ),
           ),
           Text(
-            '\$${amount.toStringAsFixed(2)}',
+            'EGP ${amount.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleMedium!.copyWith(
               fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
               color: isTotal ? AppColors.accentColor : textColor,

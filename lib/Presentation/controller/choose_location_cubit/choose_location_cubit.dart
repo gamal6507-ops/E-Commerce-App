@@ -53,7 +53,7 @@ class ChooseLocationCubit extends Cubit<ChooseLocationState> {
     }
   }
 
-  Future<void> addLocation(String location) async {
+  Future<void> addLocation(Location location) async {
     emit(AddingLocation());
     try {
       final currentUserId = _authRepository.currentUserId;
@@ -61,25 +61,8 @@ class ChooseLocationCubit extends Cubit<ChooseLocationState> {
         emit(LocationAddingFailure('User is not logged in'));
         return;
       }
-      final separator = location.contains('-') ? '-' : ',';
-      final splittedLocations = location.split(separator);
-      if (splittedLocations.length < 2 ||
-          splittedLocations[0].trim().isEmpty ||
-          splittedLocations[1].trim().isEmpty) {
-        emit(
-          LocationAddingFailure(
-            'Please enter location in format: City-Country',
-          ),
-        );
-        return;
-      }
       final existing = await _locationRepository.fetchLocations(currentUserId);
-      final locationItem = Location(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        city: splittedLocations[0].trim(),
-        country: splittedLocations[1].trim(),
-        isChosen: existing.isEmpty,
-      );
+      final locationItem = location.copyWith(isChosen: existing.isEmpty);
       await _locationRepository.setLocation(locationItem, currentUserId);
       if (isClosed) return;
       emit(LocationAdded());

@@ -14,10 +14,8 @@ class PaymentCardModel extends PaymentCard {
     final result = <String, dynamic>{};
 
     result.addAll({'id': id});
-    result.addAll({'cardNumber': cardNumber});
     result.addAll({'cardHolderName': cardHolderName});
     result.addAll({'expiryDate': expiryDate});
-    result.addAll({'cvv': cvv});
     result.addAll({'isChosen': isChosen});
 
     return result;

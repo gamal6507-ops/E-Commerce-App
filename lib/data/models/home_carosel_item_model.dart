@@ -1,10 +1,7 @@
 import 'package:e_commerce_app/domain/entities/carousel_item.dart';
 
 class HomeCarouselItemModel extends CarouselItem {
-  const HomeCarouselItemModel({
-    required super.id,
-    required super.imgUrl,
-  });
+  const HomeCarouselItemModel({required super.id, required super.imgUrl});
 
   Map<String, dynamic> toMap() {
     final result = <String, dynamic>{};

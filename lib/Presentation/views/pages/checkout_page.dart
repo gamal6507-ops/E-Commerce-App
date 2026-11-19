@@ -11,7 +11,7 @@ import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/domain/entities/location.dart';
 import 'package:e_commerce_app/domain/entities/payment_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -22,7 +22,7 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  bool _isCashOnDelivery = false;
+  bool _isCashOnDelivery = true;
 
   Widget _buildPaymentTypeSelector(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -43,7 +43,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
               icon: Icons.credit_card_rounded,
               label: context.tr('credit_card_title'),
               selected: !_isCashOnDelivery,
-              onTap: () => setState(() => _isCashOnDelivery = false),
+              onTap:
+                  () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        context.isArabic
+                            ? 'الدفع الإلكتروني غير مفعّل بعد'
+                            : 'Electronic payments are not configured yet',
+                      ),
+                    ),
+                  ),
             ),
           ),
           const SizedBox(width: 6),
@@ -303,7 +312,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       onTap: () {
                         Navigator.of(context)
                             .pushNamed(AppRoute.chooseLocation)
-                            .then((_) async => await cubit.getCheckoutContent());
+                            .then(
+                              (_) async => await cubit.getCheckoutContent(),
+                            );
                       },
                     ),
                     const SizedBox(height: 10),
@@ -377,7 +388,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+                                      'EGP ${cartItem.totalPrice.toStringAsFixed(2)}',
                                       style: const TextStyle(
                                         color: AppColors.accentColor,
                                         fontWeight: FontWeight.w800,
@@ -428,13 +439,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         children: [
                           LabelWithValueRow(
                             label: context.tr('subtotal'),
-                            value: '\$${state.subtotal.toStringAsFixed(2)}',
+                            value: 'EGP ${state.subtotal.toStringAsFixed(2)}',
                           ),
                           const SizedBox(height: 8),
                           LabelWithValueRow(
                             label: context.tr('shipping'),
                             value:
-                                '\$${state.shippingValue.toStringAsFixed(2)}',
+                                'EGP ${state.shippingValue.toStringAsFixed(2)}',
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -445,14 +456,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             children: [
                               Text(
                                 context.tr('total_amount'),
-                                style: Theme.of(context).textTheme.titleMedium!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
-                                    ),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleMedium!.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
                               ),
                               Text(
-                                '\$${state.totalAmount.toStringAsFixed(2)}',
+                                'EGP ${state.totalAmount.toStringAsFixed(2)}',
                                 style: Theme.of(
                                   context,
                                 ).textTheme.titleLarge!.copyWith(
@@ -509,7 +521,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           );
                         } else if (orderState is CheckoutOrderError) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(context.trError(orderState.message))),
+                            SnackBar(
+                              content: Text(
+                                context.trError(orderState.message),
+                              ),
+                            ),
                           );
                         }
                       },
@@ -626,9 +642,10 @@ class _PaymentTypeChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: selected
-                      ? AppColors.white1
-                      : (isDark ? AppColors.textDark : AppColors.black),
+                  color:
+                      selected
+                          ? AppColors.white1
+                          : (isDark ? AppColors.textDark : AppColors.black),
                 ),
               ),
             ),

@@ -1,9 +1,11 @@
+import 'package:e_commerce_app/services/notification_service.dart';
 import 'package:e_commerce_app/data/datasources/api_paths.dart';
 import 'package:e_commerce_app/data/datasources/firestore_services.dart';
 import 'package:e_commerce_app/data/models/user_data.dart';
 import 'package:e_commerce_app/domain/entities/app_user.dart';
 import 'package:e_commerce_app/domain/repositories/auth_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -19,10 +21,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<bool> loginWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
+  Future<bool> loginWithEmailAndPassword(String email, String password) async {
     try {
       final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email.trim(),
@@ -60,7 +59,6 @@ class AuthRepositoryImpl implements AuthRepository {
       await saveUserData(
         AppUser(
           id: user.uid,
-          password: '',
           username: user.displayName ?? user.email?.split('@').first ?? 'User',
           email: user.email ?? '',
           createdAt: DateTime.now().toIso8601String(),
@@ -72,6 +70,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> authenticateWithGoogle() async {
     try {
+      if (kIsWeb) {
+        final result = await _firebaseAuth.signInWithPopup(
+          GoogleAuthProvider(),
+        );
+        await _ensureSocialUserDocument(result.user);
+        return result.user != null;
+      }
       await _initGoogleSignIn();
 
       final GoogleSignInAccount gUser = await _googleSignIn.authenticate();
@@ -102,30 +107,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> authenticateWithFacebook() async {
-    try {
-      final loginResult = await FacebookAuth.instance.login();
-      if (loginResult.status != LoginStatus.success) {
-        throw Exception(
-          loginResult.message ?? 'Facebook authentication cancelled or failed',
-        );
-      }
-
-      final accessToken = loginResult.accessToken;
-      if (accessToken == null) {
-        throw Exception('Facebook access token is missing');
-      }
-
-      final credential = FacebookAuthProvider.credential(
-        accessToken.tokenString,
-      );
-      final userCredential = await _firebaseAuth.signInWithCredential(
-        credential,
-      );
-      await _ensureSocialUserDocument(userCredential.user);
-      return userCredential.user != null;
-    } on FirebaseAuthException catch (e) {
-      throw Exception(e.message ?? 'Facebook authentication failed (${e.code})');
-    }
+    throw UnsupportedError('Facebook sign-in is not configured for this store');
   }
 
   @override
@@ -139,15 +121,14 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    await NotificationService.instance.unlinkDeviceToken();
     try {
       await _googleSignIn.signOut();
     } catch (_) {}
     try {
       await FacebookAuth.instance.logOut();
     } catch (_) {}
-    try {
-      await _firebaseAuth.signOut();
-    } catch (_) {}
+    await _firebaseAuth.signOut();
   }
 
   @override
@@ -163,7 +144,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final userData = UserData(
       id: user.id,
       username: user.username,
-      password: user.password,
       email: user.email,
       createdAt: user.createdAt,
       providerId: providerId,

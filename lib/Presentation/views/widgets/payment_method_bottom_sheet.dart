@@ -5,7 +5,7 @@ import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/core/utils/image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PaymentMethodBottomSheet extends StatelessWidget {
@@ -64,7 +64,9 @@ class PaymentMethodBottomSheet extends StatelessWidget {
                       );
                     } else if (state is FetchPaymentMethodsError &&
                         paymentMethodsCubit.cachedCards.isEmpty) {
-                      return Center(child: Text(context.trError(state.errorMessage)));
+                      return Center(
+                        child: Text(context.trError(state.errorMessage)),
+                      );
                     }
 
                     final paymentCards =
@@ -162,7 +164,9 @@ class PaymentMethodBottomSheet extends StatelessWidget {
                                     ),
                                     onPressed:
                                         () => paymentMethodsCubit
-                                            .deletePaymentMethod(paymentCard.id),
+                                            .deletePaymentMethod(
+                                              paymentCard.id,
+                                            ),
                                   ),
                                   Radio<String>(value: paymentCard.id),
                                 ],
@@ -200,9 +204,7 @@ class PaymentMethodBottomSheet extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      context.isArabic
-                          ? 'إضافة بطاقة جديدة'
-                          : 'Add New Card',
+                      context.isArabic ? 'إضافة بطاقة جديدة' : 'Add New Card',
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     trailing: const Icon(Icons.chevron_right_rounded),
@@ -225,7 +227,9 @@ class PaymentMethodBottomSheet extends StatelessWidget {
                       Navigator.of(context).pop();
                     } else if (state is ConfirmPaymentFailure) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(context.trError(state.errorMessage))),
+                        SnackBar(
+                          content: Text(context.trError(state.errorMessage)),
+                        ),
                       );
                     }
                   },
@@ -234,9 +238,10 @@ class PaymentMethodBottomSheet extends StatelessWidget {
                       return MainButton(isLoading: true, onTap: null);
                     }
                     return MainButton(
-                      text: context.isArabic
-                          ? 'تأكيد وسيلة الدفع'
-                          : 'Confirm Payment Method',
+                      text:
+                          context.isArabic
+                              ? 'تأكيد وسيلة الدفع'
+                              : 'Confirm Payment Method',
                       onTap: () => paymentMethodsCubit.confirmPaymentMethod(),
                     );
                   },

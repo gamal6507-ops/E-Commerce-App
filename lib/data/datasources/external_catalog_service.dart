@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:http/http.dart' as http;
 
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/data/datasources/product_local_cache.dart';
 import 'package:e_commerce_app/data/models/category_model.dart';
 import 'package:e_commerce_app/data/models/home_carosel_item_model.dart';
 import 'package:e_commerce_app/data/models/product_item_model.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fetches live catalog products, product details, and search results from DummyJSON API.
 class ExternalCatalogService {
@@ -29,23 +29,15 @@ class ExternalCatalogService {
   ];
 
   Future<Map<String, dynamic>> _getJson(String url) async {
-    final client = HttpClient()..connectionTimeout = _timeout;
-    try {
-      final request = await client.getUrl(Uri.parse(url)).timeout(_timeout);
-      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-      final response = await request.close().timeout(_timeout);
-      if (response.statusCode != HttpStatus.ok) {
-        throw HttpException('HTTP ${response.statusCode}', uri: Uri.parse(url));
-      }
-      final body = await response.transform(utf8.decoder).join().timeout(_timeout);
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
-      }
-      throw const FormatException('Unexpected JSON payload');
-    } finally {
-      client.close(force: true);
+    final response = await http
+        .get(Uri.parse(url), headers: {'Accept': 'application/json'})
+        .timeout(_timeout);
+    if (response.statusCode != 200) throw Exception('Catalog unavailable');
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Invalid catalog');
     }
+    return decoded;
   }
 
   String _formatCategory(String raw) {
@@ -58,7 +50,8 @@ class ExternalCatalogService {
 
   ProductItemModel _mapProduct(Map<String, dynamic> item) {
     final images = item['images'];
-    final firstImage = images is List && images.isNotEmpty ? images.first?.toString() : null;
+    final firstImage =
+        images is List && images.isNotEmpty ? images.first?.toString() : null;
     final thumbnail = item['thumbnail']?.toString();
     final imgUrl =
         (thumbnail != null && thumbnail.startsWith('http'))
@@ -82,7 +75,9 @@ class ExternalCatalogService {
     );
   }
 
-  Future<List<ProductItemModel>> fetchProducts({bool forceRefresh = false}) async {
+  Future<List<ProductItemModel>> fetchProducts({
+    bool forceRefresh = false,
+  }) async {
     final now = DateTime.now();
 
     // 1. Fast in-memory check
@@ -95,7 +90,8 @@ class ExternalCatalogService {
     }
 
     // 2. Check local disk cache if memory is empty
-    if (!forceRefresh && (_cachedProducts == null || _cachedProducts!.isEmpty)) {
+    if (!forceRefresh &&
+        (_cachedProducts == null || _cachedProducts!.isEmpty)) {
       final diskCached = await ProductLocalCache.instance.getCachedProducts();
       if (diskCached != null && diskCached.isNotEmpty) {
         _cachedProducts = diskCached;
@@ -182,7 +178,9 @@ class ExternalCatalogService {
     }
     try {
       final encoded = Uri.encodeQueryComponent(trimmed);
-      final json = await _getJson('$_baseUrl/products/search?q=$encoded&limit=25');
+      final json = await _getJson(
+        '$_baseUrl/products/search?q=$encoded&limit=25',
+      );
       final rawList = json['products'];
       if (rawList is List) {
         return rawList
@@ -205,7 +203,9 @@ class ExternalCatalogService {
     return const [];
   }
 
-  List<CategoryModel> buildCategoriesFromProducts(List<ProductItemModel> products) {
+  List<CategoryModel> buildCategoriesFromProducts(
+    List<ProductItemModel> products,
+  ) {
     final Map<String, int> counts = {};
     for (final p in products) {
       counts[p.category] = (counts[p.category] ?? 0) + 1;
@@ -240,15 +240,9 @@ class ExternalCatalogService {
     List<ProductItemModel> products,
   ) {
     final picks = products.take(4).toList();
-    if (picks.isEmpty) return dummyHomeCarouselItems;
+    if (picks.isEmpty) return [];
     return picks
-        .map(
-          (p) => HomeCarouselItemModel(
-            id: p.id,
-            imgUrl: p.imgUrl,
-          ),
-        )
+        .map((p) => HomeCarouselItemModel(id: p.id, imgUrl: p.imgUrl))
         .toList();
   }
 }
-

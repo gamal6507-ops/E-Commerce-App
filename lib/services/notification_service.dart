@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/main.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class InAppNotification {
@@ -55,28 +59,23 @@ class NotificationService {
   );
 
   final ValueNotifier<List<InAppNotification>> notificationsNotifier =
-      ValueNotifier<List<InAppNotification>>([
-        InAppNotification(
-          id: 'welcome_1',
-          title: 'Welcome to Verve Store! 🎉',
-          body: 'Explore our latest arrivals, live catalog, and smooth checkout experience.',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-          type: 'promo',
-        ),
-        InAppNotification(
-          id: 'deal_1',
-          title: 'Special Live Offer 🔥',
-          body: 'Check out today\'s trending tech and fashion items at discounted rates.',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 2)),
-          type: 'promo',
-        ),
-      ]);
+      ValueNotifier<List<InAppNotification>>([]);
 
   int get unreadCount =>
       notificationsNotifier.value.where((n) => !n.isRead).length;
 
+  bool _initialized = false;
+  Map<String, dynamic>? _pendingMessage;
+  void flushPending() {
+    final data = _pendingMessage;
+    _pendingMessage = null;
+    if (data != null) _handleMessageData(data);
+  }
+
   Future<void> initialize() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -95,10 +94,11 @@ class NotificationService {
       },
     );
 
-    final androidPlugin = _localNotifications
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
+    final androidPlugin =
+        _localNotifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
 
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(channel);
@@ -106,6 +106,8 @@ class NotificationService {
     }
 
     final messaging = FirebaseMessaging.instance;
+    await syncDeviceToken();
+    messaging.onTokenRefresh.listen((_) => syncDeviceToken());
     await messaging.requestPermission(
       alert: true,
       announcement: false,
@@ -116,10 +118,13 @@ class NotificationService {
       sound: true,
     );
 
+    _initialized = true;
+
     // Foreground FCM listener
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       final notification = message.notification;
-      final title = notification?.title ?? message.data['title'] ?? 'New Notification';
+      final title =
+          notification?.title ?? message.data['title'] ?? 'New Notification';
       final body = notification?.body ?? message.data['body'] ?? '';
       final payload = jsonEncode(message.data);
 
@@ -175,13 +180,15 @@ class NotificationService {
     );
 
     try {
-      await _localNotifications.show(
-        id,
-        title,
-        body,
-        details,
-        payload: payload,
-      );
+      if (!kIsWeb && _initialized) {
+        await _localNotifications.show(
+          id,
+          title,
+          body,
+          details,
+          payload: payload,
+        );
+      }
     } catch (e) {
       debugPrint('Error displaying local notification: $e');
     }
@@ -203,9 +210,9 @@ class NotificationService {
     required double totalAmount,
   }) async {
     await showNotification(
-      title: 'Order Confirmed! 🎉',
+      title: 'Order received / تم استلام الطلب',
       body:
-          'Your order #$orderId for \$${totalAmount.toStringAsFixed(2)} has been confirmed and is being prepared.',
+          'Your order #$orderId for EGP ${totalAmount.toStringAsFixed(2)} has been received and is awaiting confirmation.',
       type: 'order',
       payload: jsonEncode({'route': AppRoute.profileRoute}),
     );
@@ -219,15 +226,107 @@ class NotificationService {
     );
   }
 
-  void markAllAsRead() {
-    notificationsNotifier.value =
-        notificationsNotifier.value
-            .map((item) => item.copyWith(isRead: true))
-            .toList();
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _history;
+  void listenToHistory() {
+    _history?.cancel();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      notificationsNotifier.value = [];
+      return;
+    }
+    _history = FirebaseFirestore.instance
+        .collection('users/${user.uid}/notifications')
+        .orderBy('createdAt', descending: true)
+        .limit(100)
+        .snapshots()
+        .listen((snapshot) {
+          notificationsNotifier.value =
+              snapshot.docs.map((doc) {
+                final data = doc.data();
+                return InAppNotification(
+                  id: doc.id,
+                  title: data['title'] ?? '',
+                  body: data['body'] ?? '',
+                  timestamp:
+                      DateTime.tryParse(data['createdAt'] ?? '') ??
+                      DateTime.now(),
+                  isRead: data['isRead'] == true,
+                  type: data['type'] ?? 'general',
+                  payload: data['payload'],
+                );
+              }).toList();
+        }, onError: (_) {});
   }
 
-  void clearAll() {
+  Future<void> unlinkDeviceToken() async {
+    await _history?.cancel();
+    _history = null;
     notificationsNotifier.value = [];
+    if (kIsWeb) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final token = await FirebaseMessaging.instance.getToken();
+      if (user != null && token != null) {
+        await FirebaseFirestore.instance
+            .doc(
+              'users/${user.uid}/devices/${token.hashCode.toUnsigned(32).toRadixString(16)}',
+            )
+            .delete();
+      }
+      await FirebaseMessaging.instance.deleteToken();
+    } catch (_) {}
+  }
+
+  Future<void> syncDeviceToken() async {
+    if (kIsWeb) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null) return;
+      final id = token.hashCode.toUnsigned(32).toRadixString(16);
+      await FirebaseFirestore.instance.doc('users/${user.uid}/devices/$id').set(
+        {'token': token, 'updatedAt': FieldValue.serverTimestamp()},
+      );
+    } catch (_) {}
+  }
+
+  Future<void> markAllAsRead() async {
+    final entries = List<InAppNotification>.from(notificationsNotifier.value);
+    notificationsNotifier.value =
+        entries.map((item) => item.copyWith(isRead: true)).toList();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final batch = FirebaseFirestore.instance.batch();
+      for (final entry in entries) {
+        batch.update(
+          FirebaseFirestore.instance.doc(
+            'users/${user.uid}/notifications/${entry.id}',
+          ),
+          {'isRead': true},
+        );
+      }
+      await batch.commit();
+    } catch (_) {}
+  }
+
+  Future<void> clearAll() async {
+    final entries = List<InAppNotification>.from(notificationsNotifier.value);
+    notificationsNotifier.value = [];
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final batch = FirebaseFirestore.instance.batch();
+      for (final entry in entries) {
+        batch.delete(
+          FirebaseFirestore.instance.doc(
+            'users/${user.uid}/notifications/${entry.id}',
+          ),
+        );
+      }
+      await batch.commit();
+    } catch (_) {}
   }
 
   void _handleNotificationPayload(String? payload) {
@@ -242,17 +341,20 @@ class NotificationService {
 
   void _handleMessageData(Map<String, dynamic> data) {
     final navContext = navigtorKey.currentContext;
-    if (navContext == null || !navContext.mounted) return;
+    if (navContext == null || !navContext.mounted) {
+      _pendingMessage = data;
+      return;
+    }
 
     final productId = data['product_id'];
     if (productId is String && productId.isNotEmpty) {
-      Navigator.of(navContext).pushNamed(
-        AppRoute.productDetailsRoute,
-        arguments: productId,
-      );
+      Navigator.of(
+        navContext,
+      ).pushNamed(AppRoute.productDetailsRoute, arguments: productId);
+    } else if (data['route'] == AppRoute.profileRoute) {
+      Navigator.of(navContext).pushNamed(AppRoute.profileRoute);
     } else if (data['route'] == AppRoute.cartRoute) {
       Navigator.of(navContext).pushNamed(AppRoute.cartRoute);
     }
   }
 }
-

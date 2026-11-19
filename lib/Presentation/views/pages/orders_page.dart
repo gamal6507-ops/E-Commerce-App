@@ -1,0 +1,187 @@
+import 'package:material_ui/material_ui.dart';
+import 'package:e_commerce_app/core/localization/app_localizations.dart';
+import 'package:e_commerce_app/data/datasources/store_api.dart';
+
+class OrdersPage extends StatefulWidget {
+  final bool admin;
+  const OrdersPage({super.key, this.admin = false});
+  @override
+  State<OrdersPage> createState() => _OrdersPageState();
+}
+
+class _OrdersPageState extends State<OrdersPage> {
+  late Future<Map<String, dynamic>> _orders;
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  void _load() {
+    _orders = StoreApi.instance.request('orders', admin: widget.admin);
+  }
+
+  Future<void> _change(Map<String, dynamic> order, String status) async {
+    try {
+      await StoreApi.instance.request(
+        'transition',
+        method: 'POST',
+        body: {
+          'orderId': order['id'],
+          'userId': order['userId'],
+          'status': status,
+        },
+      );
+      if (mounted) {
+        setState(_load);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ar = context.isArabic;
+    const statuses = {
+      'pending': 'قيد المراجعة',
+      'confirmed': 'تم التأكيد',
+      'shipped': 'تم الشحن',
+      'delivered': 'تم التوصيل',
+      'cancelled': 'ملغي',
+      'cancellation_requested': 'طلب إلغاء',
+      'return_requested': 'طلب إرجاع',
+      'return_approved': 'تم قبول الإرجاع',
+      'return_rejected': 'تم رفض الإرجاع',
+      'returned': 'تم الاستلام من العميل',
+      'closed': 'مغلق',
+    };
+    const ownerActions = {
+      'pending': ['cancelled'],
+      'confirmed': ['cancellation_requested'],
+      'delivered': ['return_requested'],
+    };
+    const adminActions = {
+      'pending': ['confirmed', 'cancelled'],
+      'confirmed': ['shipped', 'cancelled'],
+      'cancellation_requested': ['cancelled', 'confirmed'],
+      'shipped': ['delivered'],
+      'delivered': ['return_requested'],
+      'return_requested': ['return_approved', 'return_rejected'],
+      'return_approved': ['returned'],
+      'returned': ['closed'],
+    };
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(ar ? 'الطلبات' : 'Orders'),
+        actions: [
+          IconButton(
+            onPressed: () => setState(_load),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _orders,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('${snapshot.error}'));
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final orders =
+              (snapshot.data!['orders'] as List).cast<Map<String, dynamic>>();
+          if (orders.isEmpty) {
+            return Center(
+              child: Text(ar ? 'لا توجد طلبات بعد' : 'No orders yet'),
+            );
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: orders.length,
+            itemBuilder: (context, index) {
+              final order = orders[index];
+              final status = order['status'] as String;
+              final actions =
+                  (widget.admin ? adminActions : ownerActions)[status] ??
+                  <String>[];
+              return Card(
+                child: ExpansionTile(
+                  title: Text('#${order['id']}'),
+                  subtitle: Text(
+                    '${ar ? statuses[status] ?? status : status} • EGP ${order['totalAmount']}',
+                  ),
+                  children: [
+                    ListTile(
+                      title: Text(order['shippingAddress'] ?? ''),
+                      subtitle: Text(
+                        '${order['createdAt']}\n${ar ? 'الدفع عند الاستلام' : 'Cash on delivery'}',
+                      ),
+                    ),
+                    for (final item in order['items'] as List)
+                      ListTile(
+                        title: Text('${item['product']['name']}'),
+                        subtitle: Text(
+                          '${item['quantity']} × EGP ${item['product']['price']}',
+                        ),
+                      ),
+                    if (order['trackingUrl'] != null)
+                      ListTile(
+                        title: Text(
+                          ar ? 'رابط تتبع الشحنة' : 'Shipment tracking',
+                        ),
+                        subtitle: SelectableText('${order['trackingUrl']}'),
+                      ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final next in actions)
+                          TextButton(
+                            onPressed: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder:
+                                    (c) => AlertDialog(
+                                      title: Text(
+                                        ar
+                                            ? 'تأكيد تغيير حالة الطلب؟'
+                                            : 'Confirm order action?',
+                                      ),
+                                      content: Text(
+                                        ar ? statuses[next] ?? next : next,
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.pop(c, false),
+                                          child: Text(ar ? 'رجوع' : 'Back'),
+                                        ),
+                                        TextButton(
+                                          onPressed:
+                                              () => Navigator.pop(c, true),
+                                          child: Text(ar ? 'تأكيد' : 'Confirm'),
+                                        ),
+                                      ],
+                                    ),
+                              );
+                              if (confirmed == true) await _change(order, next);
+                            },
+                            child: Text(ar ? statuses[next] ?? next : next),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}

@@ -27,19 +27,30 @@ class ProductLocalCache {
     if (products.isEmpty) return;
     try {
       _memoryProducts = List.unmodifiable(products);
+      _memoryTimestamp = DateTime.now();
       final prefs = await SharedPreferences.getInstance();
       final mapped = products.map((p) => p.toMap()).toList();
       await prefs.setString(_productsKey, jsonEncode(mapped));
       await prefs.setInt(_timestampKey, DateTime.now().millisecondsSinceEpoch);
-      debugPrint('[ProductLocalCache] Saved ${products.length} products to local storage.');
+      debugPrint(
+        '[ProductLocalCache] Saved ${products.length} products to local storage.',
+      );
     } catch (e) {
       debugPrint('[ProductLocalCache] Failed to cache products: $e');
     }
   }
 
   /// Get cached products from memory or disk
-  Future<List<ProductItemModel>?> getCachedProducts({bool ignoreExpiration = true}) async {
-    if (_memoryProducts != null && _memoryProducts!.isNotEmpty) {
+  DateTime? _memoryTimestamp;
+
+  Future<List<ProductItemModel>?> getCachedProducts({
+    bool ignoreExpiration = false,
+  }) async {
+    if (_memoryProducts != null &&
+        _memoryProducts!.isNotEmpty &&
+        (ignoreExpiration ||
+            (_memoryTimestamp != null &&
+                DateTime.now().difference(_memoryTimestamp!) < _cacheTtl))) {
       return _memoryProducts;
     }
 
@@ -52,20 +63,27 @@ class ProductLocalCache {
       if (!ignoreExpiration && timestamp != null) {
         final cachedDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
         if (DateTime.now().difference(cachedDate) > _cacheTtl) {
-          debugPrint('[ProductLocalCache] Products cache expired (older than 12h).');
+          return null;
         }
       }
 
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        final products = decoded
-            .whereType<Map<String, dynamic>>()
-            .map((item) => ProductItemModel.fromMap(item))
-            .where((p) => p.id.isNotEmpty)
-            .toList();
+        final products =
+            decoded
+                .whereType<Map<String, dynamic>>()
+                .map((item) => ProductItemModel.fromMap(item))
+                .where((p) => p.id.isNotEmpty)
+                .toList();
         if (products.isNotEmpty) {
           _memoryProducts = List.unmodifiable(products);
-          debugPrint('[ProductLocalCache] Loaded ${products.length} products from disk cache.');
+          _memoryTimestamp =
+              timestamp == null
+                  ? DateTime.fromMillisecondsSinceEpoch(0)
+                  : DateTime.fromMillisecondsSinceEpoch(timestamp);
+          debugPrint(
+            '[ProductLocalCache] Loaded ${products.length} products from disk cache.',
+          );
           return _memoryProducts;
         }
       }
@@ -99,11 +117,12 @@ class ProductLocalCache {
       if (raw == null || raw.isEmpty) return null;
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        final categories = decoded
-            .whereType<Map<String, dynamic>>()
-            .map((item) => CategoryModel.fromMap(item))
-            .where((c) => c.name.isNotEmpty)
-            .toList();
+        final categories =
+            decoded
+                .whereType<Map<String, dynamic>>()
+                .map((item) => CategoryModel.fromMap(item))
+                .where((c) => c.name.isNotEmpty)
+                .toList();
         if (categories.isNotEmpty) {
           _memoryCategories = List.unmodifiable(categories);
           return _memoryCategories;
@@ -139,11 +158,12 @@ class ProductLocalCache {
       if (raw == null || raw.isEmpty) return null;
       final decoded = jsonDecode(raw);
       if (decoded is List) {
-        final items = decoded
-            .whereType<Map<String, dynamic>>()
-            .map((item) => HomeCarouselItemModel.fromMap(item))
-            .where((i) => i.id.isNotEmpty)
-            .toList();
+        final items =
+            decoded
+                .whereType<Map<String, dynamic>>()
+                .map((item) => HomeCarouselItemModel.fromMap(item))
+                .where((i) => i.id.isNotEmpty)
+                .toList();
         if (items.isNotEmpty) {
           _memoryCarousel = List.unmodifiable(items);
           return _memoryCarousel;
@@ -175,4 +195,3 @@ class ProductLocalCache {
     await prefs.remove(_timestampKey);
   }
 }
-

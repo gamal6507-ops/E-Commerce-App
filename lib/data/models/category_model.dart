@@ -1,6 +1,6 @@
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/domain/entities/category.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CategoryModel extends Category {
   CategoryModel({
@@ -10,9 +10,9 @@ class CategoryModel extends Category {
     Color bgColor = AppColors.primaryColor,
     Color textColor = AppColors.white1,
   }) : super(
-          bgColorValue: bgColor.toARGB32(),
-          textColorValue: textColor.toARGB32(),
-        );
+         bgColorValue: bgColor.toARGB32(),
+         textColorValue: textColor.toARGB32(),
+       );
 
   Map<String, dynamic> toMap() {
     final result = <String, dynamic>{};

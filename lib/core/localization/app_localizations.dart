@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppLocalizations {
   final Locale locale;
@@ -60,7 +60,8 @@ class AppLocalizations {
       'search_in_category': 'Search in category',
       'no_products_found': 'No matching products found',
       'no_products_in_cat': 'No products found in this category',
-      'explore_categories_hint': 'Tap any category below to discover its products',
+      'explore_categories_hint':
+          'Tap any category below to discover its products',
       'items_count': 'items',
       'matching_categories': 'Matching Categories',
       'matching_products': 'Matching Products',
@@ -96,7 +97,8 @@ class AppLocalizations {
       'price': 'Price',
       'add_to_cart': 'Add to Cart',
       'item_added_to_cart': 'Product added to cart!',
-      'default_product_desc': 'Crafted for daily comfort, clean styling, and lasting durability.',
+      'default_product_desc':
+          'Crafted for daily comfort, clean styling, and lasting durability.',
 
       // Home & Discover
       'welcome_user': 'Welcome',
@@ -109,7 +111,8 @@ class AppLocalizations {
       // Favorites
       'favorites_title': 'My Favorites',
       'favorites_empty': 'No favorite products yet',
-      'favorites_empty_sub': 'Tap the heart icon on any product to save it here!',
+      'favorites_empty_sub':
+          'Tap the heart icon on any product to save it here!',
 
       // Cart & Checkout
       'cart_title': 'My Cart',
@@ -126,7 +129,8 @@ class AppLocalizations {
       'shipping_address': 'Shipping Address',
       'place_order': 'Place Order',
       'order_success': 'Order Placed Successfully!',
-      'order_success_sub': 'Thank you! Your order has been placed and is being prepared.',
+      'order_success_sub':
+          'Thank you! Your order has been placed and is being prepared.',
       'size_label': 'Size',
       'qty': 'Qty',
       'order_items': 'Order Items',
@@ -140,7 +144,8 @@ class AppLocalizations {
       'edit': 'Edit',
       'retry': 'Retry',
       'order_placed_title': 'Order Placed!',
-      'order_placed_sub': 'Your order has been confirmed and saved to your account.',
+      'order_placed_sub':
+          'Your order has been confirmed and saved to your account.',
       'back_to_home': 'Back to Home',
 
       // Account & Profile
@@ -236,7 +241,8 @@ class AppLocalizations {
       'reset_password_title': 'إعادة تعيين كلمة المرور',
       'reset_password_sub': 'أدخل بريدك الإلكتروني المسجل',
       'send_link': 'إرسال الرابط',
-      'reset_link_sent': 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
+      'reset_link_sent':
+          'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني',
 
       // Product Details
       'select_size': 'اختر المقاس',
@@ -244,7 +250,8 @@ class AppLocalizations {
       'price': 'السعر',
       'add_to_cart': 'إضافة إلى السلة',
       'item_added_to_cart': 'تمت إضافة المنتج إلى السلة بنجاح!',
-      'default_product_desc': 'مصمم لراحة يومية، وأناقة عصرية، وجودة تدوم طويلاً.',
+      'default_product_desc':
+          'مصمم لراحة يومية، وأناقة عصرية، وجودة تدوم طويلاً.',
 
       // Home & Discover
       'welcome_user': 'مرحباً',

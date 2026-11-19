@@ -1,3 +1,4 @@
+import 'package:e_commerce_app/Presentation/views/pages/orders_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/empty_list_tile.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/user_avatar.dart';
@@ -5,9 +6,7 @@ import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/core/utils/image.dart';
-import 'package:e_commerce_app/data/repositories/checkout_repository_impl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ProfileBody extends StatelessWidget {
   final String username;
@@ -100,126 +99,6 @@ class ProfileBody extends StatelessWidget {
       },
     );
     emailController.dispose();
-  }
-
-  void _showOrdersBottomSheet(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard;
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: cardBg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.65,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.tr('my_orders'),
-                    style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: CheckoutRepositoryImpl().fetchOrders(uid),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator.adaptive(),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return Center(
-                            child: Text(
-                              context.isArabic
-                                  ? 'فشل تحميل الطلبات: ${snapshot.error}'
-                                  : 'Failed to load orders: ${snapshot.error}',
-                            ),
-                          );
-                        }
-                        final orders = snapshot.data ?? const [];
-                        if (orders.isEmpty) {
-                          return Center(
-                            child: Text(
-                              context.tr('no_orders_yet'),
-                              style: const TextStyle(color: AppColors.grey1),
-                            ),
-                          );
-                        }
-                        return ListView.separated(
-                          itemCount: orders.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final order = orders[index];
-                            final items = (order['items'] as List?)?.length ?? 0;
-                            final total =
-                                (order['totalAmount'] as num?)?.toDouble() ??
-                                0.0;
-                            final status =
-                                (order['status'] ?? 'pending').toString();
-                            final address =
-                                (order['shippingAddress'] ?? '').toString();
-                            return Card(
-                              child: ListTile(
-                                leading: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accentSoft,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.local_shipping_outlined,
-                                    color: AppColors.accentColor,
-                                  ),
-                                ),
-                                title: Text(
-                                  context.isArabic
-                                      ? 'طلب #${order['id']}'
-                                      : 'Order #${order['id']}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  context.isArabic
-                                      ? '$items منتجات • $address\nالحالة: $status'
-                                      : '$items item(s) • $address\nStatus: ${status.toUpperCase()}',
-                                ),
-                                isThreeLine: true,
-                                trailing: Text(
-                                  '\$${total.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.accentColor,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -364,7 +243,11 @@ class ProfileBody extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             EmptyListTile(
-              ontap: () => _showOrdersBottomSheet(context),
+              ontap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const OrdersPage()),
+                  ),
               leadingIcon: const Icon(
                 Icons.receipt_long_rounded,
                 color: AppColors.accentColor,

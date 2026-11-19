@@ -25,11 +25,29 @@ class HomeCubit extends Cubit<HomeState> {
   final FavoriteRepository _favoriteRepository;
   final AuthRepository _authRepository;
 
-  Future<void> getHomeData() async {
-    emit(HomeLoading());
+  bool _loading = false;
+  Future<void> getHomeData({bool loadMore = false}) async {
+    if (_loading) {
+      return;
+    }
+    _loading = true;
+    final previous = state;
+    if (loadMore && previous is HomeLoaded) {
+      emit(
+        HomeLoaded(
+          carouselItems: previous.carouselItems,
+          products: previous.products,
+          categories: previous.categories,
+          hasMore: previous.hasMore,
+          loadingMore: true,
+        ),
+      );
+    } else {
+      emit(HomeLoading());
+    }
     try {
       final currentUserId = _authRepository.currentUserId;
-      final products = await _homeRepository.fetchProducts();
+      final products = await _homeRepository.fetchProducts(loadMore: loadMore);
       final carouselItems = await _homeRepository.fetchCarouselItems();
       final categories = await _homeRepository.fetchCategories();
       final favoriteProducts =
@@ -37,23 +55,27 @@ class HomeCubit extends Cubit<HomeState> {
               ? await _favoriteRepository.getFavorites(currentUserId)
               : <Product>[];
 
-      final List<Product> finalProducts = products.map((product) {
-        final isFavorite = favoriteProducts.any(
-          (item) => item.id == product.id,
-        );
-        return product.copyWith(isFavorite: isFavorite);
-      }).toList();
+      final List<Product> finalProducts =
+          products.map((product) {
+            final isFavorite = favoriteProducts.any(
+              (item) => item.id == product.id,
+            );
+            return product.copyWith(isFavorite: isFavorite);
+          }).toList();
       if (isClosed) return;
       emit(
         HomeLoaded(
           carouselItems: carouselItems,
           products: finalProducts,
           categories: categories,
+          hasMore: _homeRepository.hasMore,
         ),
       );
     } catch (e) {
       if (isClosed) return;
       emit(HomeError(e.toString()));
+    } finally {
+      _loading = false;
     }
   }
 }

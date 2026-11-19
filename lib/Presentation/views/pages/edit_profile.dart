@@ -3,7 +3,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/profile_body_widget.da
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/domain/entities/app_user.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EditProfile extends StatelessWidget {
@@ -55,10 +55,20 @@ class EditProfile extends StatelessWidget {
       body: BlocConsumer<ProfileCubit, ProfileState>(
         bloc: cubit,
         listener: (context, state) {
-          if (state is ProfileUpdatingFailed) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(context.trError(state.error))));
+          if (state is ProfileEmailVerificationSent) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  context.isArabic
+                      ? 'راجع بريدك لتأكيد تغيير البريد الإلكتروني'
+                      : 'Check your email to verify the email change',
+                ),
+              ),
+            );
+          } else if (state is ProfileUpdatingFailed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(context.trError(state.error))),
+            );
           } else if (state is ProfileUpdatedSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(context.tr('profile_updated'))),
@@ -82,7 +92,6 @@ class EditProfile extends StatelessWidget {
           return _buildBody(
             const AppUser(
               id: '',
-              password: '',
               username: 'No name',
               email: 'No email',
               createdAt: '',

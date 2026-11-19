@@ -1,3 +1,4 @@
+import 'package:e_commerce_app/data/datasources/catalog_search.dart';
 import 'package:e_commerce_app/Presentation/controller/home_cubit/home_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/porfile_cubit/cubit/profile_cubit.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/category_tab_view.dart';
@@ -7,11 +8,10 @@ import 'package:e_commerce_app/Presentation/views/widgets/user_avatar.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:e_commerce_app/data/models/category_model.dart';
 import 'package:e_commerce_app/domain/entities/category.dart';
 import 'package:e_commerce_app/domain/entities/product.dart';
 import 'package:e_commerce_app/services/notification_service.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomePage extends StatefulWidget {
@@ -140,7 +140,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             ),
                             ValueListenableBuilder<List<InAppNotification>>(
                               valueListenable:
-                                  NotificationService.instance
+                                  NotificationService
+                                      .instance
                                       .notificationsNotifier,
                               builder: (context, notifications, _) {
                                 final unreadCount =
@@ -215,7 +216,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         final categories =
                             homeState is HomeLoaded
                                 ? homeState.categories
-                                : dummyCategories;
+                                : <Category>[];
                         _openSearch(context, products, categories);
                       },
                       child: Container(
@@ -432,14 +433,7 @@ class _ProductSearchDelegate extends SearchDelegate<Product?> {
             )
             .toList();
     if (list.isNotEmpty) return list;
-    return dummyCategories
-        .where(
-          (c) =>
-              c.id != 'all' &&
-              c.name.trim().toLowerCase() != 'all products' &&
-              c.name.trim().toLowerCase() != 'all',
-        )
-        .toList();
+    return [];
   }
 
   IconData _getCategoryIcon(String category) {
@@ -503,131 +497,27 @@ class _ProductSearchDelegate extends SearchDelegate<Product?> {
 
   @override
   Widget buildResults(BuildContext context) {
-    final trimmed = query.trim();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard;
-    final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
-    final textColor = isDark ? AppColors.textDark : AppColors.black;
-
-    final results =
-        trimmed.isEmpty
-            ? products
-            : products
-                .where((p) => _matchesQuery(p, trimmed, context))
-                .toList();
-
-    if (results.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color:
-                      isDark
-                          ? AppColors.surfaceSoftDark
-                          : AppColors.surfaceSoft,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.search_off_rounded,
-                  size: 36,
-                  color: AppColors.grey1,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.tr('no_products_found'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.tr('explore_categories_hint'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: AppColors.grey1),
-              ),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: borderColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  query = '';
-                  showSuggestions(context);
-                },
-                icon: const Icon(Icons.category_rounded, size: 18),
-                label: Text(context.tr('suggested_categories')),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: isDark ? AppColors.surfaceSoftDark : AppColors.surfaceSoft,
-          child: Row(
-            children: [
-              Text(
-                '${results.length} ${context.tr('items_count')}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: AppColors.grey1,
-                ),
-              ),
-              const Spacer(),
-              if (trimmed.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.filter_alt_rounded,
-                        size: 13,
-                        color: AppColors.primaryColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        trimmed,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(child: _renderProductList(results, context)),
-      ],
+    final value = query.trim();
+    if (value.isEmpty) { return _renderProductList(products, context); }
+    return FutureBuilder<List<Product>>(
+      future: CatalogSearch().search(value),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) { return Center(child: Text('${snapshot.error}')); }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final matches = <String, Product>{
+          for (final product in products.where(
+            (p) => _matchesQuery(p, value, context),
+          ))
+            product.id: product,
+          for (final product in snapshot.data!) product.id: product,
+        };
+        if (matches.isEmpty) {
+          return Center(child: Text(context.tr('no_products_found')));
+        }
+        return _renderProductList(matches.values.toList(), context);
+      },
     );
   }
 
@@ -859,8 +749,7 @@ class _ProductSearchDelegate extends SearchDelegate<Product?> {
               products
                   .where(
                     (p) =>
-                        p.category.toLowerCase() ==
-                        category.name.toLowerCase(),
+                        p.category.toLowerCase() == category.name.toLowerCase(),
                   )
                   .length;
 
@@ -1034,7 +923,7 @@ class _ProductSearchDelegate extends SearchDelegate<Product?> {
           ),
           const SizedBox(width: 8),
           Text(
-            '\$${p.price.toStringAsFixed(2)}',
+            'EGP ${p.price.toStringAsFixed(2)}',
             style: const TextStyle(
               color: AppColors.accentColor,
               fontWeight: FontWeight.w700,

@@ -1,3 +1,4 @@
+import 'package:e_commerce_app/data/datasources/store_api.dart';
 import 'package:e_commerce_app/data/datasources/api_paths.dart';
 import 'package:e_commerce_app/data/datasources/firestore_services.dart';
 import 'package:e_commerce_app/data/models/user_data.dart';
@@ -14,6 +15,14 @@ class ProfileRepositoryImpl implements ProfileRepository {
         await firebaseServices.firestore.doc(ApiPaths.user(userId)).get();
     final data = docSnapshot.data();
     if (docSnapshot.exists && data != null) {
+      final email = FirebaseAuth.instance.currentUser?.email;
+      if (email != null && data['email'] != email) {
+        await firebaseServices.updateData(
+          path: ApiPaths.user(userId),
+          data: {'email': email},
+        );
+        data['email'] = email;
+      }
       return UserData.fromMap(data);
     }
 
@@ -24,7 +33,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
             : 'password';
     final fallbackUser = UserData(
       id: userId,
-      password: '',
       username:
           currentUser?.displayName ??
           currentUser?.email?.split('@').first ??
@@ -47,10 +55,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     if (currentUser != null && currentUser.email != newEmail) {
       await currentUser.verifyBeforeUpdateEmail(newEmail);
     }
-    await firebaseServices.updateData(
-      path: ApiPaths.user(userId),
-      data: {'email': newEmail},
-    );
+    // Firebase Auth changes the email only after the verification link is used.
   }
 
   @override
@@ -66,10 +71,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
     if (currentUser != null) {
       await currentUser.updatePassword(newPassword);
     }
-    await firebaseServices.updateData(
-      path: ApiPaths.user(userId),
-      data: {'password': newPassword},
-    );
   }
 
   @override
@@ -81,5 +82,5 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<void> deleteUser(String userId) async =>
-      await firebaseServices.deleteData(path: ApiPaths.user(userId));
+      await StoreApi.instance.request('account', method: 'DELETE');
 }

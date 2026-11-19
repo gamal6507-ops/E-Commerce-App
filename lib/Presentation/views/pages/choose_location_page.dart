@@ -1,244 +1,186 @@
-import 'package:e_commerce_app/Presentation/controller/choose_location_cubit/choose_location_cubit.dart';
-import 'package:e_commerce_app/Presentation/views/widgets/location_item_widget.dart';
-import 'package:e_commerce_app/Presentation/views/widgets/main_button.dart';
-import 'package:e_commerce_app/core/localization/app_localizations.dart';
-import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce_app/core/localization/app_localizations.dart';
+import 'package:e_commerce_app/domain/entities/location.dart';
+import 'package:e_commerce_app/Presentation/controller/choose_location_cubit/choose_location_cubit.dart';
 
 class ChooseLocationPage extends StatefulWidget {
   const ChooseLocationPage({super.key});
-
   @override
   State<ChooseLocationPage> createState() => _ChooseLocationPageState();
 }
 
 class _ChooseLocationPageState extends State<ChooseLocationPage> {
-  final TextEditingController locationController = TextEditingController();
-
+  final _form = GlobalKey<FormState>();
+  final _fields = {
+    for (final key in [
+      'recipient',
+      'phone',
+      'street',
+      'building',
+      'unit',
+      'city',
+      'country',
+      'postalCode',
+    ])
+      key: TextEditingController(),
+  };
+  List<Location> _locations = [];
   @override
   void dispose() {
-    locationController.dispose();
+    for (final c in _fields.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final cubit = BlocProvider.of<ChooseLocationCubit>(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final defaultBorder = isDark ? AppColors.borderDark : AppColors.borderLight;
-
+    final cubit = context.read<ChooseLocationCubit>();
+    final ar = context.isArabic;
+    const labels = {
+      'recipient': 'اسم المستلم',
+      'phone': 'رقم الهاتف',
+      'street': 'الشارع',
+      'building': 'رقم العمارة',
+      'unit': 'الشقة / الدور (اختياري)',
+      'city': 'المدينة',
+      'country': 'الدولة',
+      'postalCode': 'الرمز البريدي (اختياري)',
+    };
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.isArabic ? 'عنوان التوصيل' : 'Delivery Address'),
-        leading: IconButton(
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              Navigator.of(
-                context,
-                rootNavigator: true,
-              ).pushNamedAndRemoveUntil(
-                AppRoute.checkoutRoute,
-                (route) => false,
-              );
+      appBar: AppBar(title: Text(ar ? 'عنوان التوصيل' : 'Delivery address')),
+      body: BlocConsumer<ChooseLocationCubit, ChooseLocationState>(
+        listener: (context, state) {
+          if (state is FetchedLocations) {
+            _locations = state.locations;
+          }
+          if (state is LocationAdded) {
+            for (final c in _fields.values) {
+              c.clear();
             }
-          },
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.isArabic ? 'اختر موقع التوصيل' : 'Choose your location',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                context.isArabic
-                    ? 'أضف المدينة والدولة (مثال: Cairo-Egypt) أو اختر عنواناً محفوظاً.'
-                    : 'Add a city and country (e.g. Cairo-Egypt) or pick a saved address.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium!.copyWith(color: AppColors.grey1),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: locationController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.location_on_outlined),
-                  suffixIcon:
-                      BlocConsumer<ChooseLocationCubit, ChooseLocationState>(
-                        bloc: cubit,
-                        buildWhen:
-                            (previous, current) =>
-                                current is AddingLocation ||
-                                current is LocationAdded ||
-                                current is LocationAddingFailure,
-                        listenWhen:
-                            (previous, current) =>
-                                current is LocationAdded ||
-                                current is LocationAddingFailure ||
-                                current is ConfirmAddressLoaded ||
-                                current is ConfirmAddressFailure,
-                        listener: (context, state) {
-                          if (state is LocationAdded) {
-                            locationController.clear();
-                          } else if (state is LocationAddingFailure) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(context.trError(state.errorMessage))),
-                            );
-                          } else if (state is ConfirmAddressFailure) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(context.trError(state.errorMessage))),
-                            );
-                          } else if (state is ConfirmAddressLoaded) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                        builder: (context, state) {
-                          if (state is AddingLocation) {
-                            return const Padding(
-                              padding: EdgeInsets.all(12.0),
-                              child: SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator.adaptive(
-                                  strokeWidth: 2,
-                                ),
+          }
+          if (state is ConfirmAddressLoaded) {
+            Navigator.of(context).pop();
+          }
+          final error =
+              state is LocationAddingFailure
+                  ? state.errorMessage
+                  : state is ConfirmAddressFailure
+                  ? state.errorMessage
+                  : null;
+          if (error != null) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(error)));
+          }
+        },
+        builder:
+            (context, state) => SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Form(
+                    key: _form,
+                    child: Column(
+                      children: [
+                        for (final entry in _fields.entries)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: TextFormField(
+                              controller: entry.value,
+                              maxLength: 150,
+                              keyboardType:
+                                  entry.key == 'phone'
+                                      ? TextInputType.phone
+                                      : TextInputType.text,
+                              decoration: InputDecoration(
+                                labelText: ar ? labels[entry.key] : entry.key,
                               ),
-                            );
-                          }
-                          return IconButton(
-                            icon: const Icon(
-                              Icons.add_circle_rounded,
-                              color: AppColors.accentColor,
+                              validator: (value) {
+                                if ([
+                                  'unit',
+                                  'postalCode',
+                                ].contains(entry.key)) {
+                                  return null;
+                                }
+                                if (value == null || value.trim().isEmpty) {
+                                  return ar ? 'هذا الحقل مطلوب' : 'Required';
+                                }
+                                if (entry.key == 'phone' &&
+                                    !RegExp(
+                                      r'^\+?[0-9 ()-]{7,25}$',
+                                    ).hasMatch(value.trim())) {
+                                  return ar
+                                      ? 'رقم هاتف غير صحيح'
+                                      : 'Invalid phone';
+                                }
+                                return null;
+                              },
                             ),
-                            onPressed: () {
-                              if (locationController.text.trim().isNotEmpty) {
-                                cubit.addLocation(locationController.text);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      context.trError('Enter City-Country first!'),
-                                    ),
-                                  ),
-                                );
-                              }
+                          ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed:
+                        state is AddingLocation
+                            ? null
+                            : () async {
+                              if (!_form.currentState!.validate()) return;
+                              String value(String key) =>
+                                  _fields[key]!.text.trim();
+                              await cubit.addLocation(
+                                Location(
+                                  id:
+                                      DateTime.now().microsecondsSinceEpoch
+                                          .toString(),
+                                  recipient: value('recipient'),
+                                  phone: value('phone'),
+                                  street: value('street'),
+                                  building: value('building'),
+                                  unit: value('unit'),
+                                  city: value('city'),
+                                  country: value('country'),
+                                  postalCode: value('postalCode'),
+                                ),
+                              );
                             },
-                          );
-                        },
-                      ),
-                  hintText: context.isArabic ? 'القاهرة - مصر (Cairo-Egypt)' : 'Cairo-Egypt',
-                ),
-              ),
-              const SizedBox(height: 26),
-              Text(
-                context.tr('addresses'),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 12),
-              BlocBuilder<ChooseLocationCubit, ChooseLocationState>(
-                bloc: cubit,
-                buildWhen:
-                    (previous, current) =>
-                        current is FetchLocationsFailure ||
-                        current is FetchedLocations ||
-                        current is FetchingLocations,
-                builder: (context, state) {
-                  if (state is FetchingLocations) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: CircularProgressIndicator.adaptive(),
-                      ),
-                    );
-                  } else if (state is FetchedLocations) {
-                    final locations = state.locations;
-                    if (locations.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Text(
-                          context.isArabic
-                              ? 'لا توجد مواقع محفوظة حتى الآن. أضف عنواناً بالأعلى (مثل: Cairo-Egypt).'
-                              : 'No saved locations yet. Add one above (e.g. Cairo-Egypt).',
-                          style: const TextStyle(color: AppColors.grey1),
+                    child: Text(ar ? 'حفظ العنوان' : 'Save address'),
+                  ),
+                  const SizedBox(height: 20),
+                  for (final address in _locations)
+                    Card(
+                      child: ListTile(
+                        title: Text(
+                          '${address.recipient} — ${address.city}, ${address.country}',
                         ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      itemCount: locations.length,
-                      physics: const NeverScrollableScrollPhysics(),
-                      shrinkWrap: true,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final location = locations[index];
-                        return BlocBuilder<
-                          ChooseLocationCubit,
-                          ChooseLocationState
-                        >(
-                          bloc: cubit,
-                          buildWhen:
-                              (previous, current) => current is LocationChosen,
-                          builder: (context, chosenState) {
-                            final chosenId =
-                                chosenState is LocationChosen
-                                    ? chosenState.location.id
-                                    : cubit.selectedLocationId;
-                            final isSelected = chosenId == location.id;
-                            return LocationItemWidget(
-                              onTap: () => cubit.selectLocation(location.id),
-                              onDelete: () => cubit.deleteLocation(location.id),
-                              location: location,
-                              borderColor:
-                                  isSelected
-                                      ? AppColors.accentColor
-                                      : defaultBorder,
-                              isSelected: isSelected,
-                            );
-                          },
-                        );
-                      },
-                    );
-                  } else if (state is FetchLocationsFailure) {
-                    return Center(child: Text(context.trError(state.errorMessage)));
-                  }
-                  return const SizedBox.shrink();
-                },
+                        subtitle: Text(
+                          '${address.street} ${address.building} ${address.unit}\n${address.phone}',
+                        ),
+                        leading: Icon(
+                          cubit.selectedLocationId == address.id
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                        ),
+                        onTap: () => cubit.selectLocation(address.id),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => cubit.deleteLocation(address.id),
+                        ),
+                      ),
+                    ),
+                  ElevatedButton(
+                    onPressed:
+                        state is ConfirmAddressLoading
+                            ? null
+                            : () => cubit.confirmAddress(),
+                    child: Text(ar ? 'تأكيد العنوان' : 'Confirm address'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 28),
-              BlocBuilder<ChooseLocationCubit, ChooseLocationState>(
-                bloc: cubit,
-                buildWhen:
-                    (previous, current) =>
-                        current is ConfirmAddressLoading ||
-                        current is ConfirmAddressLoaded ||
-                        current is ConfirmAddressFailure,
-                builder: (context, state) {
-                  if (state is ConfirmAddressLoading) {
-                    return MainButton(isLoading: true);
-                  }
-                  return MainButton(
-                    text: context.isArabic ? 'تأكيد العنوان' : 'Confirm Address',
-                    onTap: () => cubit.confirmAddress(),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
+            ),
       ),
     );
   }

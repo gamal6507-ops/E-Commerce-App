@@ -1,5 +1,5 @@
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -39,10 +39,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -54,15 +51,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.borderLight,
-          ),
+          borderSide: const BorderSide(color: AppColors.borderLight),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.borderLight,
-          ),
+          borderSide: const BorderSide(color: AppColors.borderLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -88,9 +81,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primaryColor,
         contentTextStyle: const TextStyle(color: AppColors.white1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -132,10 +123,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -147,15 +135,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.borderDark,
-          ),
+          borderSide: const BorderSide(color: AppColors.borderDark),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.borderDark,
-          ),
+          borderSide: const BorderSide(color: AppColors.borderDark),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -181,9 +165,7 @@ class AppTheme {
         bodyColor: AppColors.textDark,
         displayColor: AppColors.textDark,
       ),
-      iconTheme: const IconThemeData(
-        color: AppColors.textDark,
-      ),
+      iconTheme: const IconThemeData(color: AppColors.textDark),
       dialogTheme: const DialogThemeData(
         backgroundColor: AppColors.surfaceCardDark,
         titleTextStyle: TextStyle(
@@ -191,10 +173,7 @@ class AppTheme {
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
-        contentTextStyle: TextStyle(
-          color: AppColors.textDark,
-          fontSize: 14,
-        ),
+        contentTextStyle: TextStyle(color: AppColors.textDark, fontSize: 14),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.surfaceCardDark,
@@ -203,11 +182,8 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.surfaceSoftDark,
         contentTextStyle: const TextStyle(color: AppColors.textDark),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
-

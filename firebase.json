@@ -1,1 +1,30 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"e-commerce-app-902b2","appId":"1:318651917402:android:85bf649acd02cd8112a463","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"e-commerce-app-902b2","configurations":{"android":"1:318651917402:android:85bf649acd02cd8112a463"}}}}},"firestore":{"database":"(default)","location":"eur3","rules":"firestore.rules","indexes":"firestore.indexes.json"},"auth":{"providers":{}},"emulators":{"auth":{"port":9099},"firestore":{"port":8080},"ui":{"enabled":true},"singleProjectMode":true}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Verve Store",
+        "supportEmail": "gamal6507@gmail.com",
+        "authorizedRedirectUris": [
+          "https://verve-store-gamal6507.firebaseapp.com/__/auth/handler"
+        ]
+      }
+    }
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  }
+}

@@ -1,3 +1,7 @@
+import 'package:e_commerce_app/Presentation/controller/favorite_cubit/favorite_cubit.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:e_commerce_app/Presentation/views/pages/admin_page.dart';
+import 'package:e_commerce_app/data/datasources/store_api.dart';
 import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_state.dart';
 import 'package:e_commerce_app/Presentation/controller/auth_cubit/auth_cubit.dart';
@@ -9,15 +13,64 @@ import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
+  Future<void> _deleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (c) => AlertDialog(
+            title: Text(
+              context.isArabic
+                  ? 'حذف الحساب نهائيًا؟'
+                  : 'Permanently delete account?',
+            ),
+            content: Text(
+              context.isArabic
+                  ? 'سيتم حذف الحساب وبياناته وعناوينه وطلباته. سجّل الدخول مرة أخرى أولًا إذا طُلب منك ذلك.'
+                  : 'Your account, addresses and orders will be deleted. You may need to sign in again first.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(c, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(c, true),
+                child: Text(
+                  context.isArabic ? 'حذف نهائي' : 'Delete permanently',
+                ),
+              ),
+            ],
+          ),
+    );
+    if (confirmed != true) return;
+    try {
+      await StoreApi.instance.request('account', method: 'DELETE');
+      await FirebaseAuth.instance.signOut();
+      if (context.mounted) {
+        Navigator.of(
+          context,
+          rootNavigator: true,
+        ).pushNamedAndRemoveUntil(AppRoute.loginRoute, (_) => false);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
+
   Future<void> _showChangePasswordDialog(BuildContext context) async {
     final profileCubit = context.read<ProfileCubit>();
     final passwordController = TextEditingController();
+    final currentPassword = TextEditingController();
     final confirmController = TextEditingController();
 
     await showDialog<void>(
@@ -29,10 +82,21 @@ class SettingsPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
+                controller: currentPassword,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText:
+                      context.isArabic
+                          ? 'كلمة المرور الحالية'
+                          : 'Current password',
+                ),
+              ),
+              TextField(
                 controller: passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: context.isArabic ? 'كلمة المرور الجديدة' : 'New Password',
+                  labelText:
+                      context.isArabic ? 'كلمة المرور الجديدة' : 'New Password',
                 ),
               ),
               const SizedBox(height: 12),
@@ -40,7 +104,10 @@ class SettingsPage extends StatelessWidget {
                 controller: confirmController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: context.isArabic ? 'تأكيد كلمة المرور' : 'Confirm Password',
+                  labelText:
+                      context.isArabic
+                          ? 'تأكيد كلمة المرور'
+                          : 'Confirm Password',
                 ),
               ),
             ],
@@ -51,14 +118,16 @@ class SettingsPage extends StatelessWidget {
               child: Text(context.tr('cancel')),
             ),
             TextButton(
-              onPressed: () {
-                final newPass = passwordController.text.trim();
-                final confirmPass = confirmController.text.trim();
+              onPressed: () async {
+                final newPass = passwordController.text;
+                final confirmPass = confirmController.text;
                 if (newPass.length < 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        context.trError('Password must be at least 6 characters'),
+                        context.trError(
+                          'Password must be at least 6 characters',
+                        ),
                       ),
                     ),
                   );
@@ -67,15 +136,31 @@ class SettingsPage extends StatelessWidget {
                 if (newPass != confirmPass) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        context.trError('Passwords do not match'),
-                      ),
+                      content: Text(context.trError('Passwords do not match')),
                     ),
                   );
                   return;
                 }
-                Navigator.of(dialogContext).pop();
-                profileCubit.updatePassword(newPassword: newPass);
+                try {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user?.email == null) {
+                    throw Exception('Sign in again to change your password');
+                  }
+                  await user!.reauthenticateWithCredential(
+                    EmailAuthProvider.credential(
+                      email: user.email!,
+                      password: currentPassword.text,
+                    ),
+                  );
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  await profileCubit.updatePassword(newPassword: newPass);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('$e')));
+                  }
+                }
               },
               child: Text(context.tr('save')),
             ),
@@ -83,6 +168,7 @@ class SettingsPage extends StatelessWidget {
         );
       },
     );
+    currentPassword.dispose();
     passwordController.dispose();
     confirmController.dispose();
   }
@@ -99,11 +185,11 @@ class SettingsPage extends StatelessWidget {
           content: Text(
             context.isArabic
                 ? 'البريد الإلكتروني: ${user?.email ?? 'غير متوفر'}\n'
-                  'تم التحقق: ${user?.emailVerified == true ? 'نعم' : 'لا'}\n'
-                  'طريقة تسجيل الدخول: $providers'
+                    'تم التحقق: ${user?.emailVerified == true ? 'نعم' : 'لا'}\n'
+                    'طريقة تسجيل الدخول: $providers'
                 : 'Email: ${user?.email ?? 'N/A'}\n'
-                  'Email Verified: ${user?.emailVerified ?? false}\n'
-                  'Sign-in Provider: $providers',
+                    'Email Verified: ${user?.emailVerified ?? false}\n'
+                    'Sign-in Provider: $providers',
           ),
           actions: [
             TextButton(
@@ -177,9 +263,13 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.light_mode_outlined),
                   title: Text(context.tr('theme_light')),
-                  trailing: currentMode == ThemeMode.light
-                      ? const Icon(Icons.check_circle, color: AppColors.accentColor)
-                      : null,
+                  trailing:
+                      currentMode == ThemeMode.light
+                          ? const Icon(
+                            Icons.check_circle,
+                            color: AppColors.accentColor,
+                          )
+                          : null,
                   onTap: () {
                     prefCubit.setThemeMode(ThemeMode.light);
                     Navigator.of(sheetContext).pop();
@@ -188,9 +278,13 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.dark_mode_outlined),
                   title: Text(context.tr('theme_dark')),
-                  trailing: currentMode == ThemeMode.dark
-                      ? const Icon(Icons.check_circle, color: AppColors.accentColor)
-                      : null,
+                  trailing:
+                      currentMode == ThemeMode.dark
+                          ? const Icon(
+                            Icons.check_circle,
+                            color: AppColors.accentColor,
+                          )
+                          : null,
                   onTap: () {
                     prefCubit.setThemeMode(ThemeMode.dark);
                     Navigator.of(sheetContext).pop();
@@ -243,9 +337,13 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Text('🇺🇸', style: TextStyle(fontSize: 22)),
                   title: Text(context.tr('lang_en')),
-                  trailing: currentCode == 'en'
-                      ? const Icon(Icons.check_circle, color: AppColors.accentColor)
-                      : null,
+                  trailing:
+                      currentCode == 'en'
+                          ? const Icon(
+                            Icons.check_circle,
+                            color: AppColors.accentColor,
+                          )
+                          : null,
                   onTap: () {
                     prefCubit.setLocale(const Locale('en'));
                     Navigator.of(sheetContext).pop();
@@ -254,9 +352,13 @@ class SettingsPage extends StatelessWidget {
                 ListTile(
                   leading: const Text('🇪🇬', style: TextStyle(fontSize: 22)),
                   title: Text(context.tr('lang_ar')),
-                  trailing: currentCode == 'ar'
-                      ? const Icon(Icons.check_circle, color: AppColors.accentColor)
-                      : null,
+                  trailing:
+                      currentCode == 'ar'
+                          ? const Icon(
+                            Icons.check_circle,
+                            color: AppColors.accentColor,
+                          )
+                          : null,
                   onTap: () {
                     prefCubit.setLocale(const Locale('ar'));
                     Navigator.of(sheetContext).pop();
@@ -311,10 +413,7 @@ class SettingsPage extends StatelessWidget {
                 Navigator.of(
                   context,
                   rootNavigator: true,
-                ).pushNamedAndRemoveUntil(
-                  AppRoute.homeRoute,
-                  (route) => false,
-                );
+                ).pushNamedAndRemoveUntil(AppRoute.homeRoute, (route) => false);
               }
             },
             icon: const Icon(Icons.arrow_back_ios_new, size: 18),
@@ -421,9 +520,10 @@ class SettingsPage extends StatelessWidget {
                     () => _showInfoDialog(
                       context,
                       title: context.tr('settings_privacy'),
-                      content: context.isArabic
-                          ? 'يتم تخزين بيانات حسابك وعناوين الشحن وبطاقات الدفع وسلتك وطلباتك بأمان تام وفقاً لأعلى معايير الخصوصية.'
-                          : 'Your account data, saved addresses, payment cards, cart, and orders are stored securely per user account.',
+                      content:
+                          context.isArabic
+                              ? 'نستخدم Firebase لتسجيل الدخول وحفظ بيانات الحساب والعناوين والسلة والطلبات. لا نحفظ كلمة المرور أو بيانات البطاقة. يمكنك حذف حسابك من الإعدادات. تُستخدم بيانات التوصيل لتنفيذ طلبك فقط. لا توجد خدمات دفع إلكتروني مفعّلة حاليًا.'
+                              : 'We use Firebase for sign-in and account, delivery, cart and order data. We do not store passwords or card details. Delete your account from Settings. Delivery details are used to fulfill your order. Electronic payments are not enabled.',
                     ),
                 leadingIcon: const Icon(Icons.privacy_tip_outlined),
                 title: context.tr('settings_privacy'),
@@ -437,9 +537,10 @@ class SettingsPage extends StatelessWidget {
                     () => _showInfoDialog(
                       context,
                       title: context.tr('settings_help'),
-                      content: context.isArabic
-                          ? 'هل تحتاج لمساعدة في حسابك أو طلباتك؟ تواصل معنا عبر البريد: support@ecommerce-app.local'
-                          : 'Need help with an order or your account? Contact support@ecommerce-app.local.',
+                      content:
+                          context.isArabic
+                              ? 'للدعم ومتابعة الطلبات تواصل معنا عبر واتساب: 01095930009'
+                              : 'For support and order inquiries, contact WhatsApp: +20 1095930009.',
                     ),
                 leadingIcon: const Icon(Icons.help_outline_rounded),
                 title: context.tr('settings_help'),
@@ -449,6 +550,80 @@ class SettingsPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
+              FutureBuilder<IdTokenResult>(
+                future: FirebaseAuth.instance.currentUser?.getIdTokenResult(),
+                builder:
+                    (context, snapshot) =>
+                        snapshot.data?.claims?['admin'] == true
+                            ? ListTile(
+                              leading: const Icon(
+                                Icons.admin_panel_settings_outlined,
+                              ),
+                              title: Text(
+                                context.isArabic
+                                    ? 'إدارة المتجر'
+                                    : 'Store administration',
+                              ),
+                              onTap:
+                                  () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AdminPage(),
+                                    ),
+                                  ),
+                            )
+                            : const SizedBox.shrink(),
+              ),
+              ListTile(
+                leading: const Icon(Icons.chat_outlined),
+                title: Text(
+                  context.isArabic
+                      ? 'واتساب الدعم: 01095930009'
+                      : 'WhatsApp support: +20 1095930009',
+                ),
+                onTap:
+                    () => launchUrl(
+                      Uri.parse('https://wa.me/201095930009'),
+                      mode: LaunchMode.externalApplication,
+                    ),
+              ),
+              if (FirebaseAuth.instance.currentUser?.emailVerified == false)
+                ListTile(
+                  leading: const Icon(Icons.mark_email_read_outlined),
+                  title: Text(
+                    context.isArabic
+                        ? 'تأكيد البريد الإلكتروني'
+                        : 'Verify email',
+                  ),
+                  onTap: () async {
+                    try {
+                      await FirebaseAuth.instance.currentUser
+                          ?.sendEmailVerification();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.isArabic
+                                  ? 'راجع بريدك لتأكيد الحساب'
+                                  : 'Check your inbox to verify your account',
+                            ),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text('$e')));
+                      }
+                    }
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: Text(context.isArabic ? 'حذف الحساب' : 'Delete account'),
+                onTap: () => _deleteAccount(context),
+              ),
               BlocConsumer<AuthCubit, AuthState>(
                 bloc: cubit,
                 listenWhen:
@@ -456,6 +631,8 @@ class SettingsPage extends StatelessWidget {
                         current is AuthLoggedOut || current is AuthLogOutError,
                 listener: (context, state) {
                   if (state is AuthLoggedOut) {
+                    context.read<ProfileCubit>().reset();
+                    context.read<FavoriteCubit>().reset();
                     Navigator.of(
                       context,
                       rootNavigator: true,
@@ -464,9 +641,9 @@ class SettingsPage extends StatelessWidget {
                       (route) => false,
                     );
                   } else if (state is AuthLogOutError) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(context.trError(state.message))));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(context.trError(state.message))),
+                    );
                   }
                 },
                 buildWhen:

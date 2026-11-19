@@ -1,0 +1,35 @@
+import test,{after} from 'node:test';
+import assert from 'node:assert/strict';
+import {initializeApp,deleteApp} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
+import {createHandler} from '../../api/store.mjs';
+const enabled=!!process.env.FIRESTORE_EMULATOR_HOST;
+let app;
+after(async()=>{if(app)await deleteApp(app);});
+test('concurrent checkout retries reserve stock once and remove cart atomically',{skip:!enabled},async()=>{
+ app=initializeApp({projectId:'demo-verve-store'},'transaction-test');
+ const db=getFirestore(app);
+ const uid='transaction_user';const owner=db.doc(`users/${uid}`);
+ const product=db.doc('products/transaction_product');
+ await owner.set({id:uid});
+ await product.set({id:product.id,name:'Product',price:25,stock:5,active:true,requiresSize:false});
+ await owner.collection('locations').doc('address').set({recipient:'Test',phone:'01234567890',street:'Street',building:'1',unit:'',city:'Cairo',country:'Egypt',postalCode:''});
+ await owner.collection('cart').doc('cart').set({product:{id:product.id,price:0},quantity:2,size:'none'});
+ const handler=createHandler(()=>({db,auth:{async verifyIdToken(){return {uid};}}}));
+ const request={method:'POST',headers:{authorization:'Bearer fixture'},query:{action:'checkout'},body:{requestId:'same_request_123456789',addressId:'address',totalAmount:0,expectedAmount:60}};
+ const invoke=async()=>{const res={setHeader(){},status(code){this.code=code;return this;},json(data){this.data=data;return this;}};await handler(request,res);return res;};
+ request.query.action='quote';
+ const quote=await invoke();assert.equal(quote.code,200);
+ request.query.action='checkout';request.body.requestId=quote.data.quoteId;
+ request.body.expectedAmount=0;
+ const rejected=await invoke();assert.equal(rejected.code,409);
+ assert.equal((await product.get()).data().stock,5);
+ assert.equal((await owner.collection('orders').get()).size,0);
+ request.body.expectedAmount=60;
+ const responses=await Promise.all([invoke(),invoke()]);
+ for(const res of responses){assert.equal(res.code,200,JSON.stringify(res.data));assert.equal(res.data.totalAmount,60);assert.equal(res.data.id,quote.data.quoteId);}
+ assert.equal((await product.get()).data().stock,3);
+ assert.equal((await owner.collection('orders').get()).size,1);
+ assert.equal((await owner.collection('cart').get()).size,0);
+ await db.recursiveDelete(owner);await product.delete();
+});

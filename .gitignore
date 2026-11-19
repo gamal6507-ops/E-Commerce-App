@@ -46,3 +46,10 @@ app.*.map.json
 /android/build/
 screenshot_*.png
 Driver-App/
+node_modules/
+.vercel/
+.env*
+!.env.example
+.secrets/
+.superpowers/
+.vercel

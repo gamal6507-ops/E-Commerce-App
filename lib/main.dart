@@ -12,9 +12,13 @@ import 'package:e_commerce_app/services/notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    show GlobalWidgetsLocalizations;
+import 'package:cupertino_ui/cupertino_ui.dart'
+    show GlobalCupertinoLocalizations;
 
 final navigtorKey = GlobalKey<NavigatorState>();
 
@@ -26,13 +30,22 @@ Future<void> main() async {
 Future<void> initialzeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await NotificationService.instance.initialize();
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+  NotificationService.instance.listenToHistory();
+  if (!kIsWeb) {
+    try {
+      await NotificationService.instance.initialize();
+    } catch (e) {
+      debugPrint("Notifications unavailable: ${e.runtimeType}");
+    }
+  }
 }
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint("Handling a background message: ${message.messageId}");
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
 class MyApp extends StatelessWidget {
@@ -61,6 +74,12 @@ class MyApp extends StatelessWidget {
         builder: (context, prefState) {
           return MaterialApp(
             navigatorKey: navigtorKey,
+            builder: (context, child) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                NotificationService.instance.flushPending();
+              });
+              return child!;
+            },
             debugShowCheckedModeBanner: false,
             title: 'Verve Store',
             theme: AppTheme.lightTheme,

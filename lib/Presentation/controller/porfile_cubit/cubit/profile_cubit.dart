@@ -19,6 +19,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ProfileRepository _profileRepository;
   final AuthRepository _authRepository;
 
+  void reset() => emit(ProfileInitial());
+
   Future<void> getUserData() async {
     final currentUserId = _authRepository.currentUserId;
     if (currentUserId == null) {
@@ -66,7 +68,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       await _profileRepository.changeUserEmail(currentUserId, newEmail);
       final data = await _profileRepository.getUserData(currentUserId);
       if (isClosed) return;
-      emit(ProfileUpdatedSuccess(user: data));
+      emit(ProfileEmailVerificationSent());
       emit(ProfileLoaded(user: data));
     } catch (e) {
       if (isClosed) return;

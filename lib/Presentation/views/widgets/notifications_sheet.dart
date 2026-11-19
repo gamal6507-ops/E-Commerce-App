@@ -1,7 +1,7 @@
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/services/notification_service.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 void showNotificationsSheet(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;

@@ -1,0 +1,7 @@
+{
+  "status": "success",
+  "result": {
+    "fileName": "google-services.json",
+    "fileContents": "{\n  \"project_info\": {\n    \"project_number\": \"1076199940056\",\n    \"project_id\": \"verve-store-gamal6507\",\n    \"storage_bucket\": \"verve-store-gamal6507.firebasestorage.app\"\n  },\n  \"client\": [\n    {\n      \"client_info\": {\n        \"mobilesdk_app_id\": \"1:1076199940056:android:8acc0d60c388472fb1dcad\",\n        \"android_client_info\": {\n          \"package_name\": \"com.example.e_commerc_app\"\n        }\n      },\n      \"oauth_client\": [],\n      \"api_key\": [\n        {\n          \"current_key\": \"AIzaSyAaOeNV_YyEJmn1DCc4Q-3EqBeEzA7wLuc\"\n        }\n      ],\n      \"services\": {\n        \"appinvite_service\": {\n          \"other_platform_oauth_client\": []\n        }\n      }\n    }\n  ],\n  \"configuration_version\": \"1\"\n}"
+  }
+}

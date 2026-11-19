@@ -9,15 +9,22 @@ class LocationRepositoryImpl implements LocationRepository {
 
   @override
   Future<void> setLocation(Location location, String userId) async {
-    final locationModel = location is LocationItemModel
-        ? location
-        : LocationItemModel(
-            id: location.id,
-            city: location.city,
-            country: location.country,
-            imgUrl: location.imgUrl,
-            isChosen: location.isChosen,
-          );
+    final locationModel =
+        location is LocationItemModel
+            ? location
+            : LocationItemModel(
+              id: location.id,
+              city: location.city,
+              country: location.country,
+              imgUrl: location.imgUrl,
+              isChosen: location.isChosen,
+              recipient: location.recipient,
+              phone: location.phone,
+              street: location.street,
+              building: location.building,
+              unit: location.unit,
+              postalCode: location.postalCode,
+            );
     await firestoreServices.setData(
       path: ApiPaths.location(userId, location.id),
       data: locationModel.toMap(),

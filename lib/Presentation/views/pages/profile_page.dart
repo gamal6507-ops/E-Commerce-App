@@ -2,7 +2,7 @@ import 'package:e_commerce_app/Presentation/controller/porfile_cubit/cubit/profi
 import 'package:e_commerce_app/Presentation/views/widgets/profile_body_widget.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -49,13 +49,13 @@ class ProfilePage extends StatelessWidget {
                 current is ProfileUpdatedSuccess,
         listener: (context, state) {
           if (state is ProfileLoadedError) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(context.trError(state.error))));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(context.trError(state.error))),
+            );
           } else if (state is ProfileUpdatingFailed) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(context.trError(state.error))));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(context.trError(state.error))),
+            );
           } else if (state is ProfileUpdatedSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(context.tr('profile_updated'))),

@@ -1,5 +1,5 @@
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CheckoutHeadlinesItem extends StatelessWidget {
   final String title;
@@ -19,10 +19,7 @@ class CheckoutHeadlinesItem extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
             if (numOfProducts != null)
               Text(
                 ' ($numOfProducts)',
@@ -31,10 +28,7 @@ class CheckoutHeadlinesItem extends StatelessWidget {
           ],
         ),
         if (onTap != null)
-          TextButton(
-            onPressed: onTap,
-            child: Text(context.tr('edit')),
-          ),
+          TextButton(onPressed: onTap, child: Text(context.tr('edit'))),
       ],
     );
   }

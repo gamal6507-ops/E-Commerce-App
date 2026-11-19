@@ -2,7 +2,7 @@ import 'package:e_commerce_app/Presentation/controller/home_cubit/home_cubit.dar
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/data/models/category_model.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CategoryTabView extends StatelessWidget {
@@ -37,10 +37,7 @@ class CategoryTabView extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   gradient: LinearGradient(
-                    colors: [
-                      cardColor,
-                      cardColor.withValues(alpha: 0.82),
-                    ],
+                    colors: [cardColor, cardColor.withValues(alpha: 0.82)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

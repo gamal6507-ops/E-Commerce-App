@@ -1,350 +1,93 @@
 rules_version = '2';
-
-// ===============================================================
-// Assumed Data Model
-// ===============================================================
-//
-// This security rules file assumes the following data structures:
-//
-// Collection: users
-// Document ID: {userId} (must match authenticated request.auth.uid)
-// Fields:
-//   - id: string (required, immutable, must equal {userId}, 1..128 chars)
-//   - username: string (required, 0..100 chars)
-//   - name: string (optional, used by ProfileRepositoryImpl.changeUserName, 0..100 chars)
-//   - email: string (required, empty or valid email format, <= 254 chars)
-//   - password: string (required, 0..256 chars)
-//   - createdAt: string (required, immutable, ISO 8601 timestamp string, 1..64 chars)
-//   - providerId: string (required, immutable, auth provider ID, 1..64 chars)
-//   - photoUrl: string (optional, <= 150000 chars, empty string, http(s) URL, or base64 jpeg/jpg/png/webp data URI)
-//
-// Subcollection: users/{userId}/cart
-// Document ID: {cartItemId}
-// Fields:
-//   - id: string (required, immutable, must equal {cartItemId}, 1..128 chars)
-//   - product: map (required, ProductItemModel map: id, name, imgUrl, description, price, category, averageRate)
-//   - size: string (required, one of 'S', 'M', 'L', 'XL')
-//   - quantity: int (required, 0..1000)
-//
-// Subcollection: users/{userId}/locations
-// Document ID: {locationId}
-// Fields:
-//   - id: string (required, immutable, must equal {locationId}, 1..128 chars)
-//   - city: string (required, 1..100 chars)
-//   - country: string (required, 1..100 chars)
-//   - imgUrl: string (required, empty string or http(s) URL, <= 2048 chars)
-//   - isChosen: bool (required)
-//
-// Subcollection: users/{userId}/paymentCards
-// Document ID: {paymentId}
-// Fields:
-//   - id: string (required, immutable, must equal {paymentId}, 1..128 chars)
-//   - cardNumber: string (required, 1..32 chars)
-//   - cardHolderName: string (required, 1..100 chars)
-//   - expiryDate: string (required, 1..16 chars)
-//   - cvv: string (required, 1..8 chars)
-//   - isChosen: bool (required)
-//
-// Subcollection: users/{userId}/favorites
-// Document ID: {productId}
-// Fields:
-//   - id: string (required, immutable, must equal {productId}, 1..128 chars)
-//   - name: string (required, 1..200 chars)
-//   - imgUrl: string (required, empty string or http(s) URL, <= 2048 chars)
-//   - description: string (required, 0..5000 chars)
-//   - price: number (required, 0..1000000)
-//   - category: string (required, 0..100 chars)
-//   - averageRate: number (required, 0..10)
-//
-// Subcollection: users/{userId}/orders
-// Document ID: {orderId}
-// Fields:
-//   - id: string (required, immutable, must equal {orderId}, 1..128 chars)
-//   - userId: string (required, immutable, must equal {userId}, 1..128 chars)
-//   - items: list (required, non-empty, 1..100 items)
-//   - subtotal: number (required, 0..10000000)
-//   - shipping: number (required, 0..100000)
-//   - totalAmount: number (required, 0..10100000)
-//   - shippingAddress: string (required, 1..300 chars)
-//   - paymentMethod: string (required, 1..128 chars)
-//   - status: string (required, e.g. 'pending', 'confirmed', 'cancelled', 1..32 chars)
-//   - createdAt: string (required, immutable, ISO 8601 timestamp string, 1..64 chars)
-//
-// Collections: products/{productId}, categories/{categoryId}, announcements/{announcementId}
-//   - Read-only catalog data for authenticated users; client writes denied.
-//
-// ===============================================================
-
+// users: private profile (id, username, email, providerId, createdAt, photoUrl).
+// cart/favorites: owner snapshots, never authoritative for prices or stock.
+// locations: full delivery address. devices: owned notification tokens.
+// products and orders: server-owned. paymentCards: no client access.
+// accountDeletions: server-only tombstones prevent account recreation races.
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
-
-    // Check if the user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
+    function signedIn() { return request.auth != null; }
+    function active(uid) {
+      return signedIn() && request.auth.uid == uid &&
+        !exists(/databases/$(database)/documents/accountDeletions/$(uid));
     }
-
-    // Check if user owns the resource (for user-owned documents)
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    function owner(uid) {
+      return active(uid) && exists(/databases/$(database)/documents/users/$(uid));
     }
-
-    // Verify UID/ID hasn't been tampered with on create
-    function uidUnchanged() {
-      return !('uid' in request.resource.data) ||
-        request.resource.data.uid == request.auth.uid;
+    function admin() { return signedIn() && request.auth.token.get('admin',false) == true; }
+    function text(value,min,max) { return value is string && value.size() >= min && value.size() <= max; }
+    function profile(data,uid) {
+      return data.keys().hasAll(['id','username','email','createdAt','providerId','photoUrl']) &&
+        data.keys().hasOnly(['id','username','email','createdAt','providerId','photoUrl']) &&
+        data.id == uid && text(data.username,1,100) &&
+        text(data.email,0,254) && data.email == request.auth.token.get('email','') &&
+        text(data.createdAt,1,64) && text(data.providerId,1,64) &&
+        text(data.photoUrl,0,150000) &&
+        (data.photoUrl == '' || data.photoUrl.matches('^https://.*') ||
+         data.photoUrl.matches('^data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$'));
     }
-
-    // Ensure uid field is not modified on update
-    function uidNotModified() {
-      return !('uid' in request.resource.data) ||
-        request.resource.data.uid == resource.data.uid;
+    function product(data) {
+      return data is map && data.keys().hasAll(['id','name','imgUrl','description','price','category','averageRate','requiresSize','stock']) &&
+        data.keys().hasOnly(['id','name','imgUrl','description','price','category','averageRate','requiresSize','stock']) &&
+        text(data.id,1,128) && text(data.name,1,200) && text(data.description,0,5000) &&
+        text(data.imgUrl,0,2048) && (data.imgUrl == '' || data.imgUrl.matches('^https://.*')) &&
+        text(data.category,0,100) && data.price is number && data.price >= 0 && data.price <= 1000000 &&
+        data.averageRate is number && data.averageRate >= 0 && data.averageRate <= 5 &&
+        data.requiresSize is bool && data.stock is int && data.stock >= 0 && data.stock <= 1000000;
     }
-
-    // Validate required fields exist
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
+    function cart(data,id) {
+      return data.keys().hasAll(['id','product','size','quantity']) && data.keys().hasOnly(['id','product','size','quantity']) &&
+        data.id == id && text(data.id,1,128) && product(data.product) &&
+        data.size in ['none','S','M','L','XL'] && data.quantity is int && data.quantity >= 1 && data.quantity <= 100;
     }
-
-    // Validate that the document contains only the allowed fields
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
+    function address(data,id) {
+      return data.keys().hasAll(['id','city','country','imgUrl','isChosen','recipient','phone','street','building','unit','postalCode']) &&
+        data.keys().hasOnly(['id','city','country','imgUrl','isChosen','recipient','phone','street','building','unit','postalCode']) &&
+        data.id == id && text(data.id,1,128) && text(data.city,1,150) && text(data.country,1,150) &&
+        text(data.recipient,1,150) && text(data.phone,7,25) && data.phone.matches('^[+0-9 ()-]+$') &&
+        text(data.street,1,150) && text(data.building,1,150) && text(data.unit,0,150) && text(data.postalCode,0,150) &&
+        text(data.imgUrl,0,2048) && data.isChosen is bool;
     }
-
-    // Validate that immutable fields have not changed on update
-    function areImmutableFieldsUnchanged(fields) {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
-    }
-
-    // Validate optional string (if present, must be string and within length)
-    function isValidOptionalString(field, minLen, maxLen) {
-      return !(field in request.resource.data) ||
-        (request.resource.data[field] is string &&
-         request.resource.data[field].size() >= minLen &&
-         request.resource.data[field].size() <= maxLen);
-    }
-
-    // Validate URL format (must start with https:// or http://)
-    function isValidUrl(url) {
-      return url is string &&
-        (url.matches("^https://.*") || url.matches("^http://.*"));
-    }
-
-    // Validate image URL value allowing empty string default or http(s) URL
-    function isValidOptionalUrlValue(url) {
-      return url is string &&
-        url.size() <= 2048 &&
-        (url == '' || isValidUrl(url));
-    }
-
-    // Validate optional user photoUrl (empty string, http(s) URL, or compressed base64 image data URI)
-    function isValidOptionalPhotoUrl(data) {
-      return !('photoUrl' in data) ||
-        (data.photoUrl is string &&
-         data.photoUrl.size() <= 150000 &&
-         (data.photoUrl == '' ||
-          isValidUrl(data.photoUrl) ||
-          data.photoUrl.matches("^data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$")));
-    }
-
-    // Validate email format
-    function isValidEmail(email) {
-      return email is string &&
-        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
-    // Validate ISO 8601 date string format (YYYY-MM-DDTHH:MM:SS...)
-    function isValidDateString(dateStr) {
-      return dateStr is string &&
-        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
-    }
-
-    // ===============================================================
-    // Domain Validators (Used in both create and update)
-    // ===============================================================
-
-    // Validate user profile document (users/{userId})
-    function isValidUser(data, userId) {
-      return hasRequiredFields(['id', 'username', 'email', 'password', 'createdAt', 'providerId']) &&
-        hasOnlyAllowedFields(['id', 'username', 'name', 'email', 'password', 'createdAt', 'providerId', 'photoUrl']) &&
-        data.id is string && data.id == userId && data.id.size() > 0 && data.id.size() <= 128 &&
-        data.username is string && data.username.size() <= 100 &&
-        isValidOptionalString('name', 0, 100) &&
-        data.email is string && data.email.size() <= 254 && (data.email == '' || isValidEmail(data.email)) &&
-        data.password is string && data.password.size() <= 256 &&
-        data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() <= 64 &&
-        data.providerId is string && data.providerId.size() > 0 && data.providerId.size() <= 64 &&
-        isValidOptionalPhotoUrl(data);
-    }
-
-    // Validate ProductItemModel map (used in favorites and nested inside cart items)
-    function isValidProductMap(product) {
-      return product is map &&
-        product.keys().hasAll(['id', 'name', 'imgUrl', 'description', 'price', 'category', 'averageRate']) &&
-        product.keys().hasOnly(['id', 'name', 'imgUrl', 'description', 'price', 'category', 'averageRate']) &&
-        product.id is string && product.id.size() <= 128 &&
-        product.name is string && product.name.size() > 0 && product.name.size() <= 200 &&
-        isValidOptionalUrlValue(product.imgUrl) &&
-        product.description is string && product.description.size() <= 5000 &&
-        product.price is number && product.price >= 0 && product.price <= 1000000 &&
-        product.category is string && product.category.size() <= 100 &&
-        product.averageRate is number && product.averageRate >= 0 && product.averageRate <= 10;
-    }
-
-    // Validate cart item document (users/{userId}/cart/{cartItemId})
-    function isValidCartItem(data, cartItemId) {
-      return hasRequiredFields(['id', 'product', 'size', 'quantity']) &&
-        hasOnlyAllowedFields(['id', 'product', 'size', 'quantity']) &&
-        data.id is string && data.id == cartItemId && data.id.size() > 0 && data.id.size() <= 128 &&
-        isValidProductMap(data.product) &&
-        data.size is string && data.size in ['S', 'M', 'L', 'XL'] &&
-        data.quantity is int && data.quantity >= 0 && data.quantity <= 1000;
-    }
-
-    // Validate location document (users/{userId}/locations/{locationId})
-    function isValidLocation(data, locationId) {
-      return hasRequiredFields(['id', 'city', 'country', 'imgUrl', 'isChosen']) &&
-        hasOnlyAllowedFields(['id', 'city', 'country', 'imgUrl', 'isChosen']) &&
-        data.id is string && data.id == locationId && data.id.size() > 0 && data.id.size() <= 128 &&
-        data.city is string && data.city.size() > 0 && data.city.size() <= 100 &&
-        data.country is string && data.country.size() > 0 && data.country.size() <= 100 &&
-        isValidOptionalUrlValue(data.imgUrl) &&
-        data.isChosen is bool;
-    }
-
-    // Validate payment card document (users/{userId}/paymentCards/{paymentId})
-    function isValidPaymentCard(data, paymentId) {
-      return hasRequiredFields(['id', 'cardNumber', 'cardHolderName', 'expiryDate', 'cvv', 'isChosen']) &&
-        hasOnlyAllowedFields(['id', 'cardNumber', 'cardHolderName', 'expiryDate', 'cvv', 'isChosen']) &&
-        data.id is string && data.id == paymentId && data.id.size() > 0 && data.id.size() <= 128 &&
-        data.cardNumber is string && data.cardNumber.size() > 0 && data.cardNumber.size() <= 32 &&
-        data.cardHolderName is string && data.cardHolderName.size() > 0 && data.cardHolderName.size() <= 100 &&
-        data.expiryDate is string && data.expiryDate.size() > 0 && data.expiryDate.size() <= 16 &&
-        data.cvv is string && data.cvv.size() > 0 && data.cvv.size() <= 8 &&
-        data.isChosen is bool;
-    }
-
-    // Validate favorite product document (users/{userId}/favorites/{productId})
-    function isValidFavoriteProduct(data, productId) {
-      return isValidProductMap(data) &&
-        data.id == productId &&
-        data.id.size() > 0;
-    }
-
-    // Validate order document (users/{userId}/orders/{orderId})
-    function isValidOrder(data, userId, orderId) {
-      return hasRequiredFields([
-          'id', 'userId', 'items', 'subtotal', 'shipping',
-          'totalAmount', 'shippingAddress', 'paymentMethod', 'status', 'createdAt'
-        ]) &&
-        hasOnlyAllowedFields([
-          'id', 'userId', 'items', 'subtotal', 'shipping',
-          'totalAmount', 'shippingAddress', 'paymentMethod', 'status', 'createdAt'
-        ]) &&
-        data.id is string && data.id == orderId && data.id.size() > 0 && data.id.size() <= 128 &&
-        data.userId is string && data.userId == userId && data.userId.size() > 0 && data.userId.size() <= 128 &&
-        data.items is list && data.items.size() >= 1 && data.items.size() <= 100 &&
-        data.subtotal is number && data.subtotal >= 0 && data.subtotal <= 10000000 &&
-        data.shipping is number && data.shipping >= 0 && data.shipping <= 100000 &&
-        data.totalAmount is number && data.totalAmount >= 0 && data.totalAmount <= 10100000 &&
-        data.shippingAddress is string && data.shippingAddress.size() > 0 && data.shippingAddress.size() <= 300 &&
-        data.paymentMethod is string && data.paymentMethod.size() > 0 && data.paymentMethod.size() <= 128 &&
-        data.status is string && data.status.size() > 0 && data.status.size() <= 32 &&
-        isValidDateString(data.createdAt) && data.createdAt.size() > 0 && data.createdAt.size() <= 64;
-    }
-
-    // ===============================================================
-    // Collection Rules
-    // ===============================================================
-
-    // User profile documents (PII protected: owner-only get/create/update/delete, no list)
-    match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow create: if isOwner(userId) &&
-        uidUnchanged() &&
-        isValidUser(request.resource.data, userId);
-      allow update: if isOwner(userId) &&
-        uidNotModified() &&
-        areImmutableFieldsUnchanged(['id', 'createdAt', 'providerId']) &&
-        isValidUser(request.resource.data, userId);
-      allow delete: if isOwner(userId);
-
-      // User shopping cart items
-      match /cart/{cartItemId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) &&
-          isValidCartItem(request.resource.data, cartItemId);
-        allow update: if isOwner(userId) &&
-          areImmutableFieldsUnchanged(['id']) &&
-          isValidCartItem(request.resource.data, cartItemId);
-        allow delete: if isOwner(userId);
+    match /users/{uid} {
+      allow get: if active(uid);
+      allow create: if active(uid) && profile(request.resource.data,uid);
+      allow update: if owner(uid) && profile(request.resource.data,uid) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id','createdAt','providerId']);
+      allow delete,list: if false;
+      match /cart/{id} {
+        allow read,delete: if owner(uid);
+        allow create,update: if owner(uid) && cart(request.resource.data,id);
       }
-
-      // User saved delivery locations
-      match /locations/{locationId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) &&
-          isValidLocation(request.resource.data, locationId);
-        allow update: if isOwner(userId) &&
-          areImmutableFieldsUnchanged(['id']) &&
-          isValidLocation(request.resource.data, locationId);
-        allow delete: if isOwner(userId);
+      match /favorites/{id} {
+        allow read,delete: if owner(uid);
+        allow create,update: if owner(uid) && product(request.resource.data) && request.resource.data.id == id;
       }
-
-      // User saved payment cards
-      match /paymentCards/{paymentId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) &&
-          isValidPaymentCard(request.resource.data, paymentId);
-        allow update: if isOwner(userId) &&
-          areImmutableFieldsUnchanged(['id']) &&
-          isValidPaymentCard(request.resource.data, paymentId);
-        allow delete: if isOwner(userId);
+      match /locations/{id} {
+        allow read,delete: if owner(uid);
+        allow create,update: if owner(uid) && address(request.resource.data,id);
       }
-
-      // User favorite products
-      match /favorites/{productId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) &&
-          isValidFavoriteProduct(request.resource.data, productId);
-        allow update: if isOwner(userId) &&
-          areImmutableFieldsUnchanged(['id']) &&
-          isValidFavoriteProduct(request.resource.data, productId);
-        allow delete: if isOwner(userId);
+      match /devices/{id} {
+        allow read,delete: if owner(uid);
+        allow create,update: if owner(uid) && request.resource.data.keys().hasAll(['token','updatedAt']) &&
+          request.resource.data.keys().hasOnly(['token','updatedAt']) && text(request.resource.data.token,1,4096) &&
+          request.resource.data.updatedAt == request.time;
       }
-
-      // User placed orders (immutable from client once created)
-      match /orders/{orderId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) &&
-          isValidOrder(request.resource.data, userId, orderId);
-        allow update: if false;
-        allow delete: if false;
+      match /orders/{id} {
+        allow read: if owner(uid);
+        allow write: if false;
       }
+      match /notifications/{id} {
+        allow read,delete: if owner(uid);
+        allow update: if owner(uid) && request.resource.data.isRead is bool &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+        allow create: if false;
+      }
+      match /paymentCards/{id} { allow read,write: if false; }
     }
-
-    // Read-only catalog collections for authenticated users
-    match /products/{productId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if false;
+    match /products/{id} {
+      allow read: if signedIn() && (resource.data.active == true || admin());
+      allow write: if false;
     }
-
-    match /categories/{categoryId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if false;
-    }
-
-    match /announcements/{announcementId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if false;
-    }
-
-    // Explicit default deny for all other paths
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    match /{document=**} { allow read,write: if false; }
   }
 }

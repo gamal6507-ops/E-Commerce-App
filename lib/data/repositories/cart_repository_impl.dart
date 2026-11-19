@@ -16,14 +16,15 @@ class CartRepositoryImpl implements CartRepository {
 
   @override
   Future<void> setCartItem(String userId, CartItem cartItem) async {
-    final cartItemModel = cartItem is AddToCartModel
-        ? cartItem
-        : AddToCartModel(
-            id: cartItem.id,
-            product: cartItem.product,
-            size: cartItem.size,
-            quantity: cartItem.quantity,
-          );
+    final cartItemModel =
+        cartItem is AddToCartModel
+            ? cartItem
+            : AddToCartModel(
+              id: cartItem.id,
+              product: cartItem.product,
+              size: cartItem.size,
+              quantity: cartItem.quantity,
+            );
     await firestoreServices.setData(
       path: ApiPaths.cartItem(userId, cartItem.id),
       data: cartItemModel.toMap(),

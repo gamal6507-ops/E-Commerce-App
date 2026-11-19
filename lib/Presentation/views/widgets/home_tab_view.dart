@@ -4,7 +4,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/product_item.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_carousel_widget/flutter_carousel_widget.dart';
 
@@ -64,126 +64,129 @@ class HomeTabView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FlutterCarousel.builder(
-                    itemCount: state.carouselItems.length,
-                    itemBuilder: (context, itemIndex, pageViewIndex) {
-                      final banner = state.carouselItems[itemIndex];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                        child: GestureDetector(
-                          onTap: () {
-                            final matchesProduct = state.products.any(
-                              (p) => p.id == banner.id,
-                            );
-                            if (matchesProduct) {
-                              Navigator.of(
-                                context,
-                                rootNavigator: true,
-                              ).pushNamed(
-                                AppRoute.productDetailsRoute,
-                                arguments: banner.id,
+                  if (state.carouselItems.isNotEmpty)
+                    FlutterCarousel.builder(
+                      itemCount: state.carouselItems.length,
+                      itemBuilder: (context, itemIndex, pageViewIndex) {
+                        final banner = state.carouselItems[itemIndex];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              final matchesProduct = state.products.any(
+                                (p) => p.id == banner.id,
                               );
-                            }
-                          },
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Container(
-                                  color:
-                                      isDark
-                                          ? AppColors.surfaceCardDark
-                                          : AppColors.primaryColor,
-                                ),
-                                CachedNetworkImage(
-                                  imageUrl: banner.imgUrl,
-                                  fit: BoxFit.cover,
-                                  placeholder:
-                                      (context, url) => const Center(
-                                        child:
-                                            CircularProgressIndicator.adaptive(),
-                                      ),
-                                  errorWidget:
-                                      (context, url, error) => const Center(
-                                        child: Icon(
-                                          Icons.shopping_bag_outlined,
-                                          size: 40,
-                                          color: AppColors.grey1,
+                              if (matchesProduct) {
+                                Navigator.of(
+                                  context,
+                                  rootNavigator: true,
+                                ).pushNamed(
+                                  AppRoute.productDetailsRoute,
+                                  arguments: banner.id,
+                                );
+                              }
+                            },
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Container(
+                                    color:
+                                        isDark
+                                            ? AppColors.surfaceCardDark
+                                            : AppColors.primaryColor,
+                                  ),
+                                  CachedNetworkImage(
+                                    imageUrl: banner.imgUrl,
+                                    fit: BoxFit.cover,
+                                    placeholder:
+                                        (context, url) => const Center(
+                                          child:
+                                              CircularProgressIndicator.adaptive(),
                                         ),
+                                    errorWidget:
+                                        (context, url, error) => const Center(
+                                          child: Icon(
+                                            Icons.shopping_bag_outlined,
+                                            size: 40,
+                                            color: AppColors.grey1,
+                                          ),
+                                        ),
+                                  ),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withValues(alpha: 0.75),
+                                        ],
+                                        stops: const [0.45, 1.0],
                                       ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.black.withValues(alpha: 0.75),
-                                      ],
-                                      stops: const [0.45, 1.0],
                                     ),
                                   ),
-                                ),
-                                Positioned(
-                                  left: 18,
-                                  bottom: 18,
-                                  right: 18,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.accentColor,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
+                                  Positioned(
+                                    left: 18,
+                                    bottom: 18,
+                                    right: 18,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.accentColor,
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            context
+                                                .tr('featured')
+                                                .toUpperCase(),
+                                            style: const TextStyle(
+                                              color: AppColors.white1,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
+                                            ),
                                           ),
                                         ),
-                                        child: Text(
-                                          context.tr('featured').toUpperCase(),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          context.isArabic
+                                              ? 'تشكيلات جديدة وحصرية'
+                                              : 'Live Collection Arrivals',
                                           style: const TextStyle(
                                             color: AppColors.white1,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        context.isArabic
-                                            ? 'تشكيلات جديدة وحصرية'
-                                            : 'Live Collection Arrivals',
-                                        style: const TextStyle(
-                                          color: AppColors.white1,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    options: FlutterCarouselOptions(
-                      height: 175,
-                      viewportFraction: 1.0,
-                      showIndicator: true,
-                      autoPlay: true,
-                      slideIndicator: CircularWaveSlideIndicator(),
+                        );
+                      },
+                      options: FlutterCarouselOptions(
+                        height: 175,
+                        viewportFraction: 1.0,
+                        showIndicator: true,
+                        autoPlay: true,
+                        slideIndicator: CircularWaveSlideIndicator(),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 18),
                   SizedBox(
                     height: 42,
@@ -303,6 +306,24 @@ class HomeTabView extends StatelessWidget {
                           child: ProductItem(productItem: product),
                         );
                       },
+                    ),
+                  if (state.hasMore)
+                    Center(
+                      child: TextButton(
+                        onPressed:
+                            state.loadingMore
+                                ? null
+                                : () => context.read<HomeCubit>().getHomeData(
+                                  loadMore: true,
+                                ),
+                        child: Text(
+                          state.loadingMore
+                              ? (context.isArabic ? 'جار التحميل' : 'Loading')
+                              : (context.isArabic
+                                  ? 'تحميل المزيد'
+                                  : 'Load more'),
+                        ),
+                      ),
                     ),
                 ],
               ),

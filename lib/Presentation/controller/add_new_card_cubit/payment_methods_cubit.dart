@@ -23,9 +23,9 @@ class PaymentMethodsCubit extends Cubit<PaymentMethodsState> {
 
   String _normalizeExpiry(String raw) {
     final trimmed = raw.trim();
-    final slashFourYear = RegExp(r'^(0[1-9]|1[0-2])/20(\d{2})$').firstMatch(
-      trimmed,
-    );
+    final slashFourYear = RegExp(
+      r'^(0[1-9]|1[0-2])/20(\d{2})$',
+    ).firstMatch(trimmed);
     if (slashFourYear != null) {
       return '${slashFourYear.group(1)}/${slashFourYear.group(2)}';
     }
@@ -124,9 +124,8 @@ class PaymentMethodsCubit extends Cubit<PaymentMethodsState> {
 
   Future<void> changePaymentMethod(String id) async {
     selectedPaymentId = id;
-    _cachedCards = _cachedCards
-        .map((c) => c.copyWith(isChosen: c.id == id))
-        .toList();
+    _cachedCards =
+        _cachedCards.map((c) => c.copyWith(isChosen: c.id == id)).toList();
     emit(FetchedPaymentMethods(_cachedCards, selectedPaymentId: id));
 
     try {
@@ -191,7 +190,9 @@ class PaymentMethodsCubit extends Cubit<PaymentMethodsState> {
     try {
       final currentUserId = _authRepository.currentUserId;
       if (currentUserId == null || selectedPaymentId == null) {
-        emit(ConfirmPaymentFailure('Please select or add a payment card first'));
+        emit(
+          ConfirmPaymentFailure('Please select or add a payment card first'),
+        );
         return;
       }
       final allPaymentMethods = await _checkoutRepository.fetchPaymentMethods(

@@ -1,4 +1,5 @@
 enum ProductSize {
+  none,
   S,
   M,
   L,
@@ -16,7 +17,7 @@ enum ProductSize {
       case 'XL':
         return ProductSize.XL;
       default:
-        return ProductSize.S;
+        return ProductSize.none;
     }
   }
 }
@@ -27,6 +28,8 @@ class Product {
   final String imgUrl;
   final String description;
   final double price;
+  final bool requiresSize;
+  final int stock;
   final bool isFavorite;
   final String category;
   final double averageRate;
@@ -38,6 +41,8 @@ class Product {
     this.description =
         'Lorem Ipsum is simply dummy text of the printing and typesetting industry Lorem Ipsum is simply dummy text of the printing and typesetting industry Lorem Ipsum is simply dummy text of the printing and typesetting industry Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
     required this.price,
+    this.requiresSize = false,
+    this.stock = 0,
     this.isFavorite = false,
     required this.category,
     this.averageRate = 4.5,
@@ -59,6 +64,8 @@ class Product {
       imgUrl: imgUrl ?? this.imgUrl,
       description: description ?? this.description,
       price: price ?? this.price,
+      requiresSize: requiresSize,
+      stock: stock,
       isFavorite: isFavorite ?? this.isFavorite,
       category: category ?? this.category,
       averageRate: averageRate ?? this.averageRate,

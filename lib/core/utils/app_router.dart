@@ -17,7 +17,7 @@ import 'package:e_commerce_app/Presentation/views/pages/profile_page.dart';
 import 'package:e_commerce_app/Presentation/views/pages/register_page.dart';
 import 'package:e_commerce_app/Presentation/views/pages/settings_page.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppRouter {
@@ -84,7 +84,8 @@ class AppRouter {
         return MaterialPageRoute(
           builder:
               (_) => BlocProvider(
-                create: (context) => PaymentMethodsCubit()..fetchPaymentMethods(),
+                create:
+                    (context) => PaymentMethodsCubit()..fetchPaymentMethods(),
                 child: const PaymentMethodsPage(),
               ),
           settings: settings,

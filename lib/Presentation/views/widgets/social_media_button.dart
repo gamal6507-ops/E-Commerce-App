@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SocialMediaButton extends StatelessWidget {
   final String? text;
@@ -44,9 +44,7 @@ class SocialMediaButton extends StatelessWidget {
                     child: SizedBox(
                       height: 22,
                       width: 22,
-                      child: CircularProgressIndicator.adaptive(
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                     ),
                   )
                   : Row(
@@ -61,7 +59,10 @@ class SocialMediaButton extends StatelessWidget {
                             (_, __, ___) => Icon(
                               Icons.login_rounded,
                               size: 20,
-                              color: isDark ? AppColors.accentColor : AppColors.primaryColor,
+                              color:
+                                  isDark
+                                      ? AppColors.accentColor
+                                      : AppColors.primaryColor,
                             ),
                       ),
                       const SizedBox(width: 12),

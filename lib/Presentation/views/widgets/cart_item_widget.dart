@@ -4,7 +4,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/counter_widget.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/domain/entities/cart_item.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CartItemWidget extends StatelessWidget {
@@ -79,11 +79,12 @@ class CartItemWidget extends StatelessWidget {
                         cartItem.product.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium!
-                            .copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -125,7 +126,7 @@ class CartItemWidget extends StatelessWidget {
                       onDecrement: () => cubit.decrementCounter(cartItem),
                     ),
                     Text(
-                      '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+                      'EGP ${cartItem.totalPrice.toStringAsFixed(2)}',
                       style: Theme.of(context).textTheme.titleMedium!.copyWith(
                         fontWeight: FontWeight.w800,
                         color: AppColors.accentColor,

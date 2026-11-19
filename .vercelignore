@@ -1,0 +1,13 @@
+.git
+.secrets
+.env*
+node_modules
+.dart_tool
+build
+android
+ios
+macos
+.agents
+*.log
+test
+server/test

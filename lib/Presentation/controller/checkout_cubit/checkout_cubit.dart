@@ -11,6 +11,9 @@ import 'package:e_commerce_app/domain/repositories/checkout_repository.dart';
 import 'package:e_commerce_app/domain/repositories/location_repository.dart';
 import 'package:e_commerce_app/services/notification_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce_app/data/models/add_to_cart_model.dart';
+import 'package:e_commerce_app/data/models/location_item_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 part 'checkout_state.dart';
 
@@ -39,14 +42,22 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         emit(CheckoutError('User is not logged in'));
         return;
       }
-      final cartItems = await _cartRepository.fetchCartItems(currentUserId);
-      final double shippingValue = cartItems.isEmpty ? 0 : 10;
-      final subtotal = cartItems.fold(
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'checkout_request_$currentUserId';
+      final pending = prefs.getString(key);
+      if (pending != null && await _checkoutRepository.receiptExists(pending)) {
+        await prefs.remove(key);
+        if (!isClosed) emit(CheckoutOrderPlaced());
+        return;
+      }
+      var cartItems = await _cartRepository.fetchCartItems(currentUserId);
+      double shippingValue = cartItems.isEmpty ? 0 : 10;
+      var subtotal = cartItems.fold(
         0.0,
         (previousValue, element) =>
             previousValue + (element.product.price * element.quantity),
       );
-      final numOfProducts = cartItems.fold(
+      var numOfProducts = cartItems.fold(
         0,
         (previousValue, element) => previousValue + element.quantity,
       );
@@ -61,8 +72,7 @@ class CheckoutCubit extends Cubit<CheckoutState> {
           break;
         }
       }
-      chosenPaymentCard ??=
-          paymentCards.isNotEmpty ? paymentCards.first : null;
+      chosenPaymentCard ??= paymentCards.isNotEmpty ? paymentCards.first : null;
 
       final chosenLocations = await _locationRepository.fetchLocations(
         currentUserId,
@@ -79,11 +89,29 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         }
       }
 
+      var total = subtotal + shippingValue;
+      _requestId = null;
+      if (chosenAddress != null && cartItems.isNotEmpty) {
+        final quote = await _checkoutRepository.quote(chosenAddress.id);
+        _requestId = quote['quoteId'] as String;
+        total = (quote['totalAmount'] as num).toDouble();
+        cartItems =
+            (quote['items'] as List)
+                .map((i) => AddToCartModel.fromMap(i as Map<String, dynamic>))
+                .toList();
+        numOfProducts = cartItems.fold(0, (sum, item) => sum + item.quantity);
+        chosenAddress = LocationItemModel.fromMap({
+          ...quote['address'] as Map<String, dynamic>,
+          'id': chosenAddress.id,
+        });
+        subtotal = (quote['subtotal'] as num).toDouble();
+        shippingValue = (quote['shipping'] as num).toDouble();
+      }
       if (isClosed) return;
       emit(
         CheckoutLoaded(
           cartItems: cartItems,
-          totalAmount: subtotal + shippingValue,
+          totalAmount: total,
           subtotal: subtotal,
           shippingValue: shippingValue,
           numOfProducts: numOfProducts,
@@ -97,7 +125,9 @@ class CheckoutCubit extends Cubit<CheckoutState> {
     }
   }
 
-  Future<void> placeOrder({bool isCashOnDelivery = false}) async {
+  String? _requestId;
+
+  Future<void> placeOrder({bool isCashOnDelivery = true}) async {
     final currentState = state;
     if (currentState is! CheckoutLoaded) return;
     if (currentState.cartItems.isEmpty) {
@@ -128,7 +158,11 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         emit(currentState);
         return;
       }
-      await _checkoutRepository.placeOrder(
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'checkout_request_$currentUserId';
+      await prefs.setString(key, _requestId!);
+      final order = await _checkoutRepository.placeOrder(
+        requestId: _requestId!,
         userId: currentUserId,
         items: currentState.cartItems,
         subtotal: currentState.subtotal,
@@ -138,11 +172,14 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         paymentCard: currentState.chosenPaymentCard,
         isCashOnDelivery: isCashOnDelivery,
       );
-      final generatedOrderId = DateTime.now().millisecondsSinceEpoch.toString();
-      await NotificationService.instance.showOrderPlacedNotification(
-        orderId: generatedOrderId,
-        totalAmount: currentState.totalAmount,
-      );
+      await prefs.remove(key);
+      _requestId = null;
+      try {
+        await NotificationService.instance.showOrderPlacedNotification(
+          orderId: order['id'] as String,
+          totalAmount: (order['totalAmount'] as num).toDouble(),
+        );
+      } catch (_) {}
       if (isClosed) return;
       emit(CheckoutOrderPlaced());
     } catch (e) {

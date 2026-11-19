@@ -18,6 +18,8 @@ class FavoriteCubit extends Cubit<FavoriteState> {
   final FavoriteRepository _favoriteRepository;
   final AuthRepository _authRepository;
 
+  void reset() => emit(FavoriteLoaded(const []));
+
   Future<void> getFavoriteProducts() async {
     final currentUserId = _authRepository.currentUserId;
     if (currentUserId == null) {

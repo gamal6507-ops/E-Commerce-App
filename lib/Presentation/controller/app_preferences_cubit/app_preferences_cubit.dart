@@ -1,5 +1,5 @@
 import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_state.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,8 +25,7 @@ class AppPreferencesCubit extends Cubit<AppPreferencesState> {
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
-    final cleanMode =
-        mode == ThemeMode.dark ? ThemeMode.dark : ThemeMode.light;
+    final cleanMode = mode == ThemeMode.dark ? ThemeMode.dark : ThemeMode.light;
     emit(state.copyWith(themeMode: cleanMode));
     try {
       final prefs = await SharedPreferences.getInstance();

@@ -1,11 +1,11 @@
 {
-    "name": "e_commerc_app",
-    "short_name": "e_commerc_app",
+    "name": "Verve Store",
+    "short_name": "Verve Store",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#11141C",
+    "theme_color": "#11141C",
+    "description": "Verve Store — products, delivery and order management.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,3 +1,6 @@
+import 'package:e_commerce_app/data/datasources/store_api.dart';
+import 'package:e_commerce_app/services/notification_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:e_commerce_app/Presentation/controller/auth_cubit/auth_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/favorite_cubit/favorite_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/porfile_cubit/cubit/profile_cubit.dart';
@@ -8,7 +11,7 @@ import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/core/utils/image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -33,7 +36,14 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _onAuthSucceeded(BuildContext context) {
+  Future<void> _onAuthSucceeded(BuildContext context) async {
+    try {
+      await StoreApi.instance.request('bootstrap', method: 'POST');
+      await FirebaseAuth.instance.currentUser?.getIdToken(true);
+    } catch (_) {}
+    NotificationService.instance.listenToHistory();
+    await NotificationService.instance.syncDeviceToken();
+    if (!context.mounted) return;
     context.read<ProfileCubit>().getUserData();
     context.read<FavoriteCubit>().getFavoriteProducts();
     Navigator.of(
@@ -41,7 +51,6 @@ class _RegisterPageState extends State<RegisterPage> {
     ).pushNamedAndRemoveUntil(AppRoute.homeRoute, (route) => false);
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final cubit = BlocProvider.of<AuthCubit>(context);
@@ -210,9 +219,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     if (state is GoogleAuthDone) {
                       _onAuthSucceeded(context);
                     } else if (state is GoogleAuthError) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(context.trError(state.message))));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(context.trError(state.message))),
+                      );
                     }
                   },
                   buildWhen:
@@ -242,9 +251,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     if (state is FacebookAuthDone) {
                       _onAuthSucceeded(context);
                     } else if (state is FacebookAuthError) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(context.trError(state.message))));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(context.trError(state.message))),
+                      );
                     }
                   },
                   builder: (context, state) {

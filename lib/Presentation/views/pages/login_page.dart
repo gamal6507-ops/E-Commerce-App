@@ -1,3 +1,6 @@
+import 'package:e_commerce_app/data/datasources/store_api.dart';
+import 'package:e_commerce_app/services/notification_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:e_commerce_app/Presentation/controller/auth_cubit/auth_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/favorite_cubit/favorite_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/porfile_cubit/cubit/profile_cubit.dart';
@@ -8,7 +11,7 @@ import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/core/utils/image.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoginPage extends StatefulWidget {
@@ -31,7 +34,14 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _onAuthSucceeded(BuildContext context) {
+  Future<void> _onAuthSucceeded(BuildContext context) async {
+    try {
+      await StoreApi.instance.request('bootstrap', method: 'POST');
+      await FirebaseAuth.instance.currentUser?.getIdToken(true);
+    } catch (_) {}
+    NotificationService.instance.listenToHistory();
+    await NotificationService.instance.syncDeviceToken();
+    if (!context.mounted) return;
     context.read<ProfileCubit>().getUserData();
     context.read<FavoriteCubit>().getFavoriteProducts();
     Navigator.of(
@@ -70,9 +80,7 @@ class _LoginPageState extends State<LoginPage> {
                 if (email.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        context.trError('Please enter your email'),
-                      ),
+                      content: Text(context.trError('Please enter your email')),
                     ),
                   );
                   return;
@@ -203,9 +211,7 @@ class _LoginPageState extends State<LoginPage> {
                           if (state is PasswordResetSuccess) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                  context.tr('reset_link_sent'),
-                                ),
+                                content: Text(context.tr('reset_link_sent')),
                               ),
                             );
                           } else if (state is PasswordResetError) {

@@ -3,7 +3,7 @@ import 'package:e_commerce_app/Presentation/controller/favorite_cubit/favorite_c
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/domain/entities/product.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProductItem extends StatelessWidget {
@@ -120,14 +120,14 @@ class ProductItem extends StatelessWidget {
                                   current is SetFavoriteLoadedError),
                       listener: (context, state) {
                         if (state is FavoriteRemoveError) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(state.error)),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(state.error)));
                         } else if (state is SetFavoriteLoadedError &&
                             state.productId == productItem.id) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(state.error)),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(state.error)));
                         }
                       },
                       buildWhen:
@@ -206,7 +206,7 @@ class ProductItem extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '\$${productItem.price.toStringAsFixed(2)}',
+            'EGP ${productItem.price.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleMedium!.copyWith(
               fontWeight: FontWeight.w800,
               color: AppColors.accentColor,

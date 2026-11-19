@@ -44,3 +44,5 @@ final class ProfileUpdatingFailed extends ProfileState {
   @override
   List<Object> get props => [error];
 }
+
+final class ProfileEmailVerificationSent extends ProfileState {}

@@ -6,7 +6,7 @@ import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/domain/entities/product.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProductDetailsPage extends StatelessWidget {
@@ -73,14 +73,19 @@ class ProductDetailsPage extends StatelessWidget {
         } else if (state is ProductDetailsLoaded) {
           final product = state.product;
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          final cardBg = isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard;
-          final softBg = isDark ? AppColors.surfaceSoftDark : AppColors.surfaceSoft;
-          final borderColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+          final cardBg =
+              isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard;
+          final softBg =
+              isDark ? AppColors.surfaceSoftDark : AppColors.surfaceSoft;
+          final borderColor =
+              isDark ? AppColors.borderDark : AppColors.borderLight;
           final textColor = isDark ? AppColors.textDark : AppColors.black;
-          final subtextColor = isDark ? AppColors.textSecondaryDark : AppColors.grey1;
+          final subtextColor =
+              isDark ? AppColors.textSecondaryDark : AppColors.grey1;
 
           return Scaffold(
-            backgroundColor: isDark ? AppColors.scaffoldBgDark : AppColors.surfaceSoft,
+            backgroundColor:
+                isDark ? AppColors.scaffoldBgDark : AppColors.surfaceSoft,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               leading: Padding(
@@ -103,9 +108,7 @@ class ProductDetailsPage extends StatelessWidget {
               ),
               title: Text(
                 context.trCategory(product.category),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium!.copyWith(
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
                   fontWeight: FontWeight.w700,
                   color: textColor,
                 ),
@@ -121,13 +124,13 @@ class ProductDetailsPage extends StatelessWidget {
                             current is SetFavoriteLoadedError,
                     listener: (context, favState) {
                       if (favState is FavoriteRemoveError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(favState.error)),
-                        );
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(favState.error)));
                       } else if (favState is SetFavoriteLoadedError) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(favState.error)),
-                        );
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(favState.error)));
                       }
                     },
                     buildWhen:
@@ -159,9 +162,8 @@ class ProductDetailsPage extends StatelessWidget {
                           onTap:
                               isFavLoading
                                   ? null
-                                  : () => cubitFavoriteProduct.setFavorite(
-                                    product,
-                                  ),
+                                  : () =>
+                                      cubitFavoriteProduct.setFavorite(product),
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
                             child:
@@ -177,10 +179,7 @@ class ProductDetailsPage extends StatelessWidget {
                                       isFav
                                           ? Icons.favorite_rounded
                                           : Icons.favorite_border_rounded,
-                                      color:
-                                          isFav
-                                              ? AppColors.red
-                                              : textColor,
+                                      color: isFav ? AppColors.red : textColor,
                                       size: 20,
                                     ),
                           ),
@@ -257,9 +256,10 @@ class ProductDetailsPage extends StatelessWidget {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.surfaceSoftDark
-                                      : AppColors.accentSoft,
+                                  color:
+                                      isDark
+                                          ? AppColors.surfaceSoftDark
+                                          : AppColors.accentSoft,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -287,12 +287,17 @@ class ProductDetailsPage extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                context.tr('select_size'),
-                                style: Theme.of(context).textTheme.titleMedium!
-                                    .copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
-                                    ),
+                                product.requiresSize
+                                    ? context.tr('select_size')
+                                    : (context.isArabic
+                                        ? 'الكمية'
+                                        : 'Quantity'),
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleMedium!.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: textColor,
+                                ),
                               ),
                               BlocBuilder<
                                 ProductDetailsCubit,
@@ -322,10 +327,7 @@ class ProductDetailsPage extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          BlocBuilder<
-                            ProductDetailsCubit,
-                            ProductDetailsState
-                          >(
+                          BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
                             bloc: cubitProductDetails,
                             buildWhen:
                                 (previous, current) =>
@@ -339,66 +341,78 @@ class ProductDetailsPage extends StatelessWidget {
                               return Wrap(
                                 spacing: 10,
                                 children:
-                                    ProductSize.values.map((itemSize) {
-                                      final isSelected =
-                                          currentSize == itemSize;
-                                      return ChoiceChip(
-                                        label: Text(itemSize.name),
-                                        selected: isSelected,
-                                        showCheckmark: false,
-                                        selectedColor:
-                                            isDark
-                                                ? AppColors.accentColor
-                                                : AppColors.primaryColor,
-                                        backgroundColor: softBg,
-                                        labelStyle: TextStyle(
-                                          color:
-                                              isSelected
-                                                  ? AppColors.white1
-                                                  : textColor,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          side: BorderSide(
-                                            color:
-                                                isSelected
-                                                    ? (isDark
-                                                        ? AppColors.accentColor
-                                                        : AppColors.primaryColor)
-                                                    : borderColor,
-                                          ),
-                                        ),
-                                        onSelected:
-                                            (_) => cubitProductDetails
-                                                .selectSize(itemSize),
-                                      );
-                                    }).toList(),
+                                    ProductSize.values
+                                        .where(
+                                          (s) =>
+                                              product.requiresSize
+                                                  ? s != ProductSize.none
+                                                  : s == ProductSize.none,
+                                        )
+                                        .map((itemSize) {
+                                          final isSelected =
+                                              currentSize == itemSize;
+                                          return ChoiceChip(
+                                            label: Text(
+                                              itemSize == ProductSize.none
+                                                  ? (context.isArabic
+                                                      ? 'قطعة'
+                                                      : 'Item')
+                                                  : itemSize.name,
+                                            ),
+                                            selected: isSelected,
+                                            showCheckmark: false,
+                                            selectedColor:
+                                                isDark
+                                                    ? AppColors.accentColor
+                                                    : AppColors.primaryColor,
+                                            backgroundColor: softBg,
+                                            labelStyle: TextStyle(
+                                              color:
+                                                  isSelected
+                                                      ? AppColors.white1
+                                                      : textColor,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              side: BorderSide(
+                                                color:
+                                                    isSelected
+                                                        ? (isDark
+                                                            ? AppColors
+                                                                .accentColor
+                                                            : AppColors
+                                                                .primaryColor)
+                                                        : borderColor,
+                                              ),
+                                            ),
+                                            onSelected:
+                                                (_) => cubitProductDetails
+                                                    .selectSize(itemSize),
+                                          );
+                                        })
+                                        .toList(),
                               );
                             },
                           ),
                           const SizedBox(height: 20),
                           Text(
                             context.tr('description'),
-                            style: Theme.of(context).textTheme.titleMedium!
-                                .copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium!.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             product.description.isNotEmpty
                                 ? product.description
                                 : context.tr('default_product_desc'),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium!.copyWith(
-                              color: subtextColor,
-                              height: 1.5,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium!
+                                .copyWith(color: subtextColor, height: 1.5),
                           ),
                         ],
                       ),
@@ -411,14 +425,10 @@ class ProductDetailsPage extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
               decoration: BoxDecoration(
                 color: cardBg,
-                border: Border(
-                  top: BorderSide(color: borderColor),
-                ),
+                border: Border(top: BorderSide(color: borderColor)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: isDark ? 0.3 : 0.05,
-                    ),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
@@ -452,7 +462,7 @@ class ProductDetailsPage extends StatelessWidget {
                                     ? qtyState.value
                                     : cubitProductDetails.quantity;
                             return Text(
-                              '\$${(product.price * qty).toStringAsFixed(2)}',
+                              'EGP ${(product.price * qty).toStringAsFixed(2)}',
                               style: Theme.of(
                                 context,
                               ).textTheme.titleLarge!.copyWith(
@@ -479,9 +489,7 @@ class ProductDetailsPage extends StatelessWidget {
                           if (cartState is ProductAddedToCart) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                  context.tr('item_added_to_cart'),
-                                ),
+                                content: Text(context.tr('item_added_to_cart')),
                               ),
                             );
                           } else if (cartState is ProductAddToCartError) {

@@ -4,12 +4,24 @@ class Location {
   final String country;
   final String imgUrl;
   final bool isChosen;
+  final String recipient;
+  final String phone;
+  final String street;
+  final String building;
+  final String unit;
+  final String postalCode;
 
   const Location({
     required this.id,
     required this.city,
     required this.country,
     this.isChosen = false,
+    this.recipient = '',
+    this.phone = '',
+    this.street = '',
+    this.building = '',
+    this.unit = '',
+    this.postalCode = '',
     this.imgUrl =
         'https://previews.123rf.com/images/emojoez/emojoez1903/emojoez190300018/119684277-illustrations-design-concept-location-maps-with-road-follow-route-for-destination-drive-by-gps.jpg',
   });
@@ -27,6 +39,12 @@ class Location {
       country: country ?? this.country,
       imgUrl: imgUrl ?? this.imgUrl,
       isChosen: isChosen ?? this.isChosen,
+      recipient: recipient,
+      phone: phone,
+      street: street,
+      building: building,
+      unit: unit,
+      postalCode: postalCode,
     );
   }
 }

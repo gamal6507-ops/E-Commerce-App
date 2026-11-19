@@ -1,5 +1,5 @@
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MainButton extends StatelessWidget {
   final double height;
@@ -42,9 +42,7 @@ class MainButton extends StatelessWidget {
                   child: SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator.adaptive(
-                      strokeWidth: 2.2,
-                    ),
+                    child: CircularProgressIndicator.adaptive(strokeWidth: 2.2),
                   ),
                 )
                 : Text(

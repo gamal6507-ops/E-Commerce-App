@@ -41,3 +41,5 @@ final class CheckoutOrderError extends CheckoutState {
 
   CheckoutOrderError(this.message);
 }
+
+final class CheckoutReceiptRecovered extends CheckoutState {}

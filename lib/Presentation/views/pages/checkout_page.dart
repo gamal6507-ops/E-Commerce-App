@@ -295,8 +295,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
             (previous, current) =>
                 current is CheckoutLoaded ||
                 current is CheckoutLoading ||
+                current is CheckoutReceiptRecovered ||
                 current is CheckoutError,
         builder: (context, state) {
+          if (state is CheckoutReceiptRecovered) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(context.tr('order_placed_title')),
+                  TextButton(
+                    onPressed: cubit.getCheckoutContent,
+                    child: Text(
+                      context.isArabic
+                          ? 'مراجعة السلة الحالية'
+                          : 'Review current cart',
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
           if (state is CheckoutLoading) {
             return const Center(child: CircularProgressIndicator.adaptive());
           } else if (state is CheckoutLoaded) {

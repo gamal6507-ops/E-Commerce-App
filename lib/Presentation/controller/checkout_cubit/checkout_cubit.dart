@@ -47,7 +47,7 @@ class CheckoutCubit extends Cubit<CheckoutState> {
       final pending = prefs.getString(key);
       if (pending != null && await _checkoutRepository.receiptExists(pending)) {
         await prefs.remove(key);
-        if (!isClosed) emit(CheckoutOrderPlaced());
+        if (!isClosed) emit(CheckoutReceiptRecovered());
         return;
       }
       var cartItems = await _cartRepository.fetchCartItems(currentUserId);

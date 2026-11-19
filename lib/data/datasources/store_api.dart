@@ -7,7 +7,7 @@ class StoreApi {
   static final instance = StoreApi();
   static const _configuredBase = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://verve-store.vercel.app',
+    defaultValue: 'https://verve-store-delta.vercel.app',
   );
   Future<Map<String, dynamic>> request(
     String action, {

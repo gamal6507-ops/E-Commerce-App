@@ -49,7 +49,7 @@ firebase deploy --only auth,firestore --project verve-store-gamal6507
 vercel --prod
 ```
 
-Vercel builds Flutter with `scripts/build-web.sh`, serves `build/web`, and bundles `api/store.mjs` with the trusted backend. GitHub CI checks the client, server and rules. Native apps use the `API_BASE_URL` Dart define (default `https://verve-store.vercel.app`). iOS release builds must be completed and tested on macOS/Xcode; this Windows workflow verifies the web release.
+Vercel builds Flutter with `scripts/build-web.sh`, serves `build/web`, and bundles `api/store.mjs` with the trusted backend. GitHub CI checks the client, server and rules. Native apps use the `API_BASE_URL` Dart define (default `https://verve-store-delta.vercel.app`). iOS release builds must be completed and tested on macOS/Xcode; this Windows workflow verifies the web release.
 
 ## Existing deployments
 

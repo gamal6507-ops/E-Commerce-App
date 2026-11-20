@@ -21,6 +21,38 @@ class _AdminPageState extends State<AdminPage> {
         .then((token) => token.claims?['admin'] == true);
   }
 
+  bool _importing = false;
+
+  Future<void> _importDemoCatalog() async {
+    setState(() => _importing = true);
+    try {
+      final result = await StoreApi.instance.request(
+        'importDemoCatalog',
+        method: 'POST',
+      );
+      if (mounted) {
+        final count = result['created'];
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.isArabic
+                  ? 'منتجات تجريبية جديدة: $count'
+                  : 'New demo products: $count',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
   Future<void> _edit([Map<String, dynamic>? product]) async {
     final fields = {
       for (final key in [
@@ -163,6 +195,15 @@ class _AdminPageState extends State<AdminPage> {
           children: [
             Wrap(
               children: [
+                TextButton.icon(
+                  onPressed: _importing ? null : _importDemoCatalog,
+                  icon: const Icon(Icons.download),
+                  label: Text(
+                    context.isArabic
+                        ? 'استيراد منتجات تجريبية'
+                        : 'Import demo products',
+                  ),
+                ),
                 TextButton.icon(
                   onPressed: () => _edit(),
                   icon: const Icon(Icons.add),

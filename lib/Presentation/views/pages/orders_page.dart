@@ -22,6 +22,39 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   Future<void> _change(Map<String, dynamic> order, String status) async {
+    String tracking = '';
+    if (widget.admin && status == 'shipped') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder:
+            (dialog) => AlertDialog(
+              title: Text(
+                context.isArabic ? 'تفاصيل الشحنة' : 'Shipment details',
+              ),
+              content: TextField(
+                keyboardType: TextInputType.url,
+                onChanged: (value) => tracking = value.trim(),
+                decoration: InputDecoration(
+                  labelText:
+                      context.isArabic
+                          ? 'رابط التتبع (اختياري)'
+                          : 'Tracking URL (optional)',
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialog, false),
+                  child: Text(context.isArabic ? 'رجوع' : 'Back'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dialog, true),
+                  child: Text(context.isArabic ? 'حفظ' : 'Save'),
+                ),
+              ],
+            ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
     try {
       await StoreApi.instance.request(
         'transition',
@@ -30,6 +63,7 @@ class _OrdersPageState extends State<OrdersPage> {
           'orderId': order['id'],
           'userId': order['userId'],
           'status': status,
+          if (tracking.isNotEmpty) 'trackingUrl': tracking,
         },
       );
       if (mounted) {
@@ -48,6 +82,7 @@ class _OrdersPageState extends State<OrdersPage> {
   Widget build(BuildContext context) {
     final ar = context.isArabic;
     const statuses = {
+      'demo': 'طلب تجريبي',
       'pending': 'قيد المراجعة',
       'confirmed': 'تم التأكيد',
       'shipped': 'تم الشحن',
@@ -120,7 +155,11 @@ class _OrdersPageState extends State<OrdersPage> {
                     ListTile(
                       title: Text(order['shippingAddress'] ?? ''),
                       subtitle: Text(
-                        '${order['createdAt']}\n${ar ? 'الدفع عند الاستلام' : 'Cash on delivery'}',
+                        '${order['createdAt']}\n${order['paymentMethod'] == 'demo'
+                            ? (ar ? 'تجريبي بدون تحصيل أو شحن' : 'Demo — no payment or delivery')
+                            : ar
+                            ? 'الدفع عند الاستلام'
+                            : 'Cash on delivery'}',
                       ),
                     ),
                     for (final item in order['items'] as List)

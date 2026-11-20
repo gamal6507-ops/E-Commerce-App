@@ -9,6 +9,7 @@ final class CheckoutLoading extends CheckoutState {}
 final class CheckoutLoaded extends CheckoutState {
   final List<CartItem> cartItems;
   final double totalAmount;
+  final bool demo;
   final double subtotal;
   final double shippingValue;
   final int numOfProducts;
@@ -18,6 +19,7 @@ final class CheckoutLoaded extends CheckoutState {
   CheckoutLoaded({
     required this.cartItems,
     required this.totalAmount,
+    this.demo = false,
     required this.shippingValue,
     required this.subtotal,
     required this.numOfProducts,

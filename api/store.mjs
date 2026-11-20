@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import { services,identify } from '../server/firebase.mjs';
 import { StoreError,priceOrder,transitionOrder,validateProduct } from '../server/orders.mjs';
+import {importDemoCatalog} from '../server/demo-catalog.mjs';
 import {storeNotice} from '../server/notices.mjs';
 
 export function createHandler(provideServices = services) {
@@ -48,7 +49,7 @@ return async function handler(req,res) {
         if(action==='quote') {delete order.stockUsed;return {...order,quoteId};}
         if(body.requestId!==quoteId) throw new StoreError('Cart or address changed. Refresh checkout before placing your order.',409);
         if(body.expectedAmount!==order.totalAmount) throw new StoreError('Prices changed. Refresh checkout to review the current total.',409);
-        for (const doc of catalog) tx.update(doc.ref,{stock:doc.data().stock-order.stockUsed[doc.id]});
+        for (const doc of catalog) if (order.status !== 'demo') tx.update(doc.ref,{stock:doc.data().stock-order.stockUsed[doc.id]});
         delete order.stockUsed;
         const record = {...order,id:ref.id,userId:user.uid,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),shippingAddress:Object.values(order.address).filter(Boolean).join(', ')};
         tx.create(ref,record);
@@ -90,6 +91,10 @@ return async function handler(req,res) {
       await storeNotice(db,uid,body.orderId,body.status);
       return res.status(200).json({ok:true});
     }
+    if (action === 'importDemoCatalog' && req.method === 'POST') {
+      if (user.admin !== true) throw new StoreError('Administrator access required',403);
+      return res.status(200).json(await importDemoCatalog(db));
+    }
     if (action === 'product' && req.method === 'POST') {
       if (user.admin !== true) throw new StoreError('Administrator access required',403);
       if (body.id != null && (typeof body.id !== 'string' || !/^[\w-]{1,128}$/.test(body.id))) throw new StoreError('Invalid product ID');
@@ -101,7 +106,7 @@ return async function handler(req,res) {
     if (action === 'account' && req.method === 'DELETE') {
       if (Date.now()/1000-user.auth_time > 300) throw new StoreError('Please sign in again before deleting your account',401);
       await db.runTransaction(async tx => {
-        const open = await tx.get(owner.collection('orders').where('status','not-in',['cancelled','delivered','returned','closed','return_rejected']).limit(1));
+        const open = await tx.get(owner.collection('orders').where('status','not-in',['cancelled','delivered','returned','closed','return_rejected','demo']).limit(1));
         if (!open.empty) throw new StoreError('Complete or cancel your open orders before deleting your account.',409);
         tx.set(db.collection('accountDeletions').doc(user.uid),{createdAt:new Date().toISOString()});
         tx.set(owner,{deleting:true},{merge:true});

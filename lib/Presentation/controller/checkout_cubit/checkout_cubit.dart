@@ -89,11 +89,13 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         }
       }
 
+      var demo = false;
       var total = subtotal + shippingValue;
       _requestId = null;
       if (chosenAddress != null && cartItems.isNotEmpty) {
         final quote = await _checkoutRepository.quote(chosenAddress.id);
         _requestId = quote['quoteId'] as String;
+        demo = quote['paymentMethod'] == 'demo';
         total = (quote['totalAmount'] as num).toDouble();
         cartItems =
             (quote['items'] as List)
@@ -112,6 +114,7 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         CheckoutLoaded(
           cartItems: cartItems,
           totalAmount: total,
+          demo: demo,
           subtotal: subtotal,
           shippingValue: shippingValue,
           numOfProducts: numOfProducts,

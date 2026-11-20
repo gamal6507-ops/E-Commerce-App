@@ -4,6 +4,10 @@ Flutter storefront with Arabic/English, Firebase authentication and private data
 
 [Open the web store](https://verve-store-delta.vercel.app/) · [Download the Android test APK](https://verve-store-delta.vercel.app/download/android)
 
+## Demo catalog
+
+Administrators can import 24 sample products from DummyJSON through the admin page or an authenticated POST to `/api/store?action=importDemoCatalog`. Importing again preserves existing edits and stock. Sample prices are illustrative EGP amounts. Sample orders are marked `demo`, never enter fulfillment and cannot be mixed with real products. Real orders continue to use cash on delivery. Staff can add an HTTPS tracking URL when recording shipment.
+
 ## Run and verify
 
 Use Flutter **3.50.0**, Node **24** and Java **21** (Firestore emulator).

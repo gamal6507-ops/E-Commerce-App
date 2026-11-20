@@ -458,14 +458,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               },
                     ),
                     const SizedBox(height: 10),
-                    _buildPaymentTypeSelector(context),
+                    if (state.demo)
+                      Text(
+                        context.isArabic
+                            ? 'طلب تجريبي بدون تحصيل أو توصيل'
+                            : 'Demo order — no payment or delivery',
+                      )
+                    else
+                      _buildPaymentTypeSelector(context),
                     const SizedBox(height: 12),
-                    _isCashOnDelivery
-                        ? _buildCashOnDeliveryCard(context)
-                        : _buildPaymentMethodItem(
-                          state.chosenPaymentCard,
-                          context,
-                        ),
+                    if (!state.demo)
+                      _isCashOnDelivery
+                          ? _buildCashOnDeliveryCard(context)
+                          : _buildPaymentMethodItem(
+                            state.chosenPaymentCard,
+                            context,
+                          ),
                     const SizedBox(height: 22),
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -537,7 +545,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 ),
                                 title: Text(context.tr('order_placed_title')),
                                 content: Text(
-                                  context.tr('order_placed_sub'),
+                                  state.demo
+                                      ? (context.isArabic
+                                          ? 'تم حفظ الطلب التجريبي بدون دفع أو شحن.'
+                                          : 'Demo order saved. No payment or delivery.')
+                                      : context.tr('order_placed_sub'),
                                   textAlign: TextAlign.center,
                                 ),
                                 actions: [
@@ -593,7 +605,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     ),
                                   )
                                   : Text(
-                                    _isCashOnDelivery
+                                    state.demo
+                                        ? (context.isArabic
+                                            ? 'تأكيد الطلب التجريبي'
+                                            : 'Confirm demo order')
+                                        : _isCashOnDelivery
                                         ? context.tr('confirm_order_cod')
                                         : context.tr('place_order'),
                                   ),

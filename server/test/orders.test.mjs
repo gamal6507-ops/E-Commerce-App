@@ -28,3 +28,12 @@ test('admin follows fulfillment lifecycle', () => {
   assert.equal(transitionOrder('confirmed','shipped',true),'shipped');
   assert.throws(()=>transitionOrder('cancelled','shipped',true));
 });
+test('demo orders have no payment or fulfillment and cannot mix with real items', () => {
+  const demo = {...product, id:'sample', demo:true};
+  const line = {id:'line', product:{id:'sample'}, quantity:1};
+  const order = priceOrder([line], [demo], address);
+  assert.equal(order.status,'demo');
+  assert.equal(order.paymentMethod,'demo');
+  assert.throws(()=>transitionOrder(order.status,'confirmed',true));
+  assert.throws(()=>priceOrder([line,{...line,id:'real',product:{id:product.id}}],[product,demo],address));
+});

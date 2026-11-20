@@ -52,7 +52,11 @@ class CartCubit extends Cubit<CartState> {
   }
 
   Future<void> incrementCounter(CartItem cartItem) async {
-    if (cartItem.quantity >= 100) return;
+    if (cartItem.quantity >= 100 ||
+        (cartItem.product.stock > 0 &&
+            cartItem.quantity >= cartItem.product.stock)) {
+      return;
+    }
     try {
       final currentUserId = _authRepository.currentUserId;
       if (currentUserId == null) {

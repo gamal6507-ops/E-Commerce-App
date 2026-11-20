@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/data/datasources/store_api.dart';
 
@@ -81,7 +82,7 @@ class _OrdersPageState extends State<OrdersPage> {
   @override
   Widget build(BuildContext context) {
     final ar = context.isArabic;
-    const statuses = {
+    const statusesAr = {
       'demo': 'طلب تجريبي',
       'pending': 'قيد المراجعة',
       'confirmed': 'تم التأكيد',
@@ -95,6 +96,22 @@ class _OrdersPageState extends State<OrdersPage> {
       'returned': 'تم الاستلام من العميل',
       'closed': 'مغلق',
     };
+    const statusesEn = {
+      'demo': 'Demo order',
+      'pending': 'Pending review',
+      'confirmed': 'Confirmed',
+      'shipped': 'Shipped',
+      'delivered': 'Delivered',
+      'cancelled': 'Cancelled',
+      'cancellation_requested': 'Cancellation requested',
+      'return_requested': 'Return requested',
+      'return_approved': 'Return approved',
+      'return_rejected': 'Return rejected',
+      'returned': 'Returned',
+      'closed': 'Closed',
+    };
+    String labelFor(String status) =>
+        (ar ? statusesAr[status] : statusesEn[status]) ?? status;
     const ownerActions = {
       'pending': ['cancelled'],
       'confirmed': ['cancellation_requested'],
@@ -124,7 +141,25 @@ class _OrdersPageState extends State<OrdersPage> {
         future: _orders,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('${snapshot.error}'));
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      context.trError(snapshot.error),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () => setState(_load),
+                      child: Text(context.tr('retry')),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -145,36 +180,64 @@ class _OrdersPageState extends State<OrdersPage> {
               final actions =
                   (widget.admin ? adminActions : ownerActions)[status] ??
                   <String>[];
+              final subtotal = order['subtotal'];
+              final shipping = order['shipping'];
+              final trackingUrl = order['trackingUrl']?.toString();
               return Card(
                 child: ExpansionTile(
                   title: Text('#${order['id']}'),
                   subtitle: Text(
-                    '${ar ? statuses[status] ?? status : status} • EGP ${order['totalAmount']}',
+                    '${labelFor(status)} • EGP ${order['totalAmount']}',
                   ),
                   children: [
                     ListTile(
                       title: Text(order['shippingAddress'] ?? ''),
                       subtitle: Text(
-                        '${order['createdAt']}\n${order['paymentMethod'] == 'demo'
-                            ? (ar ? 'تجريبي بدون تحصيل أو شحن' : 'Demo — no payment or delivery')
-                            : ar
-                            ? 'الدفع عند الاستلام'
-                            : 'Cash on delivery'}',
+                        [
+                          '${order['createdAt'] ?? ''}',
+                          if (subtotal != null && shipping != null)
+                            ar
+                                ? 'المجموع الفرعي: EGP $subtotal • الشحن: EGP $shipping'
+                                : 'Subtotal: EGP $subtotal • Shipping: EGP $shipping',
+                          order['paymentMethod'] == 'demo'
+                              ? (ar
+                                  ? 'تجريبي بدون تحصيل أو شحن'
+                                  : 'Demo — no payment or delivery')
+                              : (ar
+                                  ? 'الدفع عند الاستلام'
+                                  : 'Cash on delivery'),
+                        ].where((s) => s.isNotEmpty).join('\n'),
                       ),
                     ),
                     for (final item in order['items'] as List)
                       ListTile(
                         title: Text('${item['product']['name']}'),
                         subtitle: Text(
-                          '${item['quantity']} × EGP ${item['product']['price']}',
+                          [
+                            '${item['quantity']} × EGP ${item['product']['price']}',
+                            if (item['size'] != null && item['size'] != 'none')
+                              '${context.tr('size_label')}: ${item['size']}',
+                          ].join(' • '),
                         ),
                       ),
-                    if (order['trackingUrl'] != null)
+                    if (trackingUrl != null && trackingUrl.isNotEmpty)
                       ListTile(
                         title: Text(
                           ar ? 'رابط تتبع الشحنة' : 'Shipment tracking',
                         ),
-                        subtitle: SelectableText('${order['trackingUrl']}'),
+                        subtitle: SelectableText(trackingUrl),
+                        trailing:
+                            trackingUrl.startsWith('https://')
+                                ? IconButton(
+                                  tooltip: ar ? 'فتح الرابط' : 'Open link',
+                                  icon: const Icon(Icons.open_in_new),
+                                  onPressed:
+                                      () => launchUrl(
+                                        Uri.parse(trackingUrl),
+                                        mode: LaunchMode.externalApplication,
+                                      ),
+                                )
+                                : null,
                       ),
                     Wrap(
                       spacing: 8,
@@ -191,9 +254,7 @@ class _OrdersPageState extends State<OrdersPage> {
                                             ? 'تأكيد تغيير حالة الطلب؟'
                                             : 'Confirm order action?',
                                       ),
-                                      content: Text(
-                                        ar ? statuses[next] ?? next : next,
-                                      ),
+                                      content: Text(labelFor(next)),
                                       actions: [
                                         TextButton(
                                           onPressed:
@@ -210,7 +271,7 @@ class _OrdersPageState extends State<OrdersPage> {
                               );
                               if (confirmed == true) await _change(order, next);
                             },
-                            child: Text(ar ? statuses[next] ?? next : next),
+                            child: Text(labelFor(next)),
                           ),
                       ],
                     ),

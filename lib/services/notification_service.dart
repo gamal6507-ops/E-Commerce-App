@@ -258,10 +258,14 @@ class NotificationService {
         }, onError: (_) {});
   }
 
-  Future<void> unlinkDeviceToken() async {
+  Future<void> clearSession() async {
     await _history?.cancel();
     _history = null;
     notificationsNotifier.value = [];
+  }
+
+  Future<void> unlinkDeviceToken() async {
+    await clearSession();
     if (kIsWeb) return;
     try {
       final user = FirebaseAuth.instance.currentUser;

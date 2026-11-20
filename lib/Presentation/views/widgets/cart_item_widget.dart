@@ -118,6 +118,25 @@ class CartItemWidget extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (cartItem.product.stock <= 0 ||
+                    cartItem.quantity > cartItem.product.stock)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      cartItem.product.stock <= 0
+                          ? (context.isArabic
+                              ? 'غير متوفر حاليًا'
+                              : 'Currently out of stock')
+                          : (context.isArabic
+                              ? 'المتاح: ${cartItem.product.stock}'
+                              : 'Available stock: ${cartItem.product.stock}'),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.red,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

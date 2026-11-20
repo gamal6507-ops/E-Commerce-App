@@ -22,7 +22,7 @@ No password/PAN/CVV storage or logs. No simulated card payment. Every trusted wr
 - [x] 2. Implement and test authenticated transactional order service, inventory, idempotency, transitions and account deletion.
 - [x] 3. Connect checkout, full addresses, order details/actions, admin screens, identity verification and device tokens.
 - [x] 4. Harden rules, add emulator tests, cleanup tools, CI and operational documentation.
-- [ ] 5. Run full checks, independent review, commit/push and deploy Vercel; smoke-check deployment and report blockers.
+- [x] 5. Run full checks, independent review, commit/push and deploy Vercel; smoke-check deployment and report blockers.
 
 ## Progress / rulings
 - User's "do everything then upload" authorizes implementation and publication; continue without an additional design approval round.

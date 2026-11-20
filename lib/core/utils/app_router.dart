@@ -11,6 +11,7 @@ import 'package:e_commerce_app/Presentation/views/pages/choose_location_page.dar
 import 'package:e_commerce_app/Presentation/views/pages/custom_bottom_navbar.dart';
 import 'package:e_commerce_app/Presentation/views/pages/edit_profile.dart';
 import 'package:e_commerce_app/Presentation/views/pages/login_page.dart';
+import 'package:e_commerce_app/Presentation/views/pages/orders_page.dart';
 import 'package:e_commerce_app/Presentation/views/pages/payment_methods_page.dart';
 import 'package:e_commerce_app/Presentation/views/pages/product_details_page.dart';
 import 'package:e_commerce_app/Presentation/views/pages/profile_page.dart';
@@ -138,6 +139,11 @@ class AppRouter {
       case AppRoute.editProfileRoute:
         return MaterialPageRoute(
           builder: (_) => const EditProfile(),
+          settings: settings,
+        );
+      case AppRoute.ordersRoute:
+        return MaterialPageRoute(
+          builder: (_) => const OrdersPage(),
           settings: settings,
         );
       default:

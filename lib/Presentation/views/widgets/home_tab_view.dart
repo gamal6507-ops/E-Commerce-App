@@ -272,9 +272,13 @@ class HomeTabView extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40.0),
                         child: Text(
-                          context.isArabic
-                              ? 'لا توجد منتجات في هذه الفئة'
-                              : 'No products found in this category',
+                          selectedCategory == null
+                              ? (context.isArabic
+                                  ? 'لا توجد منتجات متاحة بعد'
+                                  : 'No products available yet')
+                              : (context.isArabic
+                                  ? 'لا توجد منتجات في هذه الفئة'
+                                  : 'No products found in this category'),
                           style: TextStyle(color: textColor),
                         ),
                       ),

@@ -147,7 +147,7 @@ class AppLocalizations {
       'retry': 'Retry',
       'order_placed_title': 'Order Placed!',
       'order_placed_sub':
-          'Your order has been confirmed and saved to your account.',
+          'Your order has been received and saved to your account. It is awaiting confirmation.',
       'back_to_home': 'Back to Home',
 
       // Account & Profile
@@ -299,7 +299,8 @@ class AppLocalizations {
       'edit': 'تعديل',
       'retry': 'إعادة المحاولة',
       'order_placed_title': 'تم تقديم الطلب!',
-      'order_placed_sub': 'تم تأكيد طلبك وحفظه في حسابك بنجاح.',
+      'order_placed_sub':
+          'تم استلام طلبك وحفظه في حسابك وهو الآن قيد المراجعة.',
       'back_to_home': 'العودة للرئيسية',
 
       // Account & Profile
@@ -403,6 +404,35 @@ class AppLocalizations {
     if (lower.contains('please select a payment card') ||
         lower.contains('choose cash on delivery')) {
       return 'يرجى اختيار بطاقة الدفع أو تحديد الدفع عند الاستلام';
+    }
+    if (lower.contains('requires-recent-login') ||
+        lower.contains('please sign in again')) {
+      return 'يرجى تسجيل الدخول مرة أخرى لإتمام هذا الإجراء الحساس';
+    }
+    if (lower.contains('insufficient stock')) {
+      return 'الكمية المطلوبة غير متوفرة حاليًا في المخزون';
+    }
+    if (lower.contains('product unavailable')) {
+      return 'أحد المنتجات في السلة غير متاح حاليًا';
+    }
+    if (lower.contains('invalid address') ||
+        lower.contains('shipping address not found')) {
+      return 'بيانات عنوان التوصيل غير مكتملة، يرجى استكمال العنوان أولًا';
+    }
+    if (lower.contains('invalid phone number')) {
+      return 'رقم الهاتف غير صالح';
+    }
+    if (lower.contains('cart or address changed')) {
+      return 'تم تعديل السلة أو العنوان، يرجى تحديث صفحة الدفع والمحاولة مجددًا';
+    }
+    if (lower.contains('prices changed')) {
+      return 'تغيرت الأسعار، يرجى تحديث صفحة الدفع لمراجعة الإجمالي الحالي';
+    }
+    if (lower.contains('complete or cancel your open orders')) {
+      return 'يرجى إنهاء أو إلغاء طلباتك المفتوحة قبل حذف الحساب';
+    }
+    if (lower.contains('select a valid size')) {
+      return 'يرجى اختيار مقاس صالح للمنتج';
     }
     if (lower.contains('user is not logged in')) {
       return 'يجب تسجيل الدخول لمتابعة هذا الإجراء';

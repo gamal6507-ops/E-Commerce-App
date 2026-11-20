@@ -56,12 +56,15 @@ class AuthRepositoryImpl implements AuthRepository {
             .doc(ApiPaths.user(user.uid))
             .get();
     if (!doc.exists || doc.data() == null) {
+      final rawPhoto = user.photoURL ?? '';
+      final safePhoto = rawPhoto.startsWith('https://') ? rawPhoto : '';
       await saveUserData(
         AppUser(
           id: user.uid,
           username: user.displayName ?? user.email?.split('@').first ?? 'User',
           email: user.email ?? '',
           createdAt: DateTime.now().toIso8601String(),
+          photoUrl: safePhoto,
         ),
       );
     }
@@ -147,6 +150,7 @@ class AuthRepositoryImpl implements AuthRepository {
       email: user.email,
       createdAt: user.createdAt,
       providerId: providerId,
+      photoUrl: user.photoUrl,
     );
     await FirestoreServices.instance.setData(
       path: ApiPaths.user(user.id),

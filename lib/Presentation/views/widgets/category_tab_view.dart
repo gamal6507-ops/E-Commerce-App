@@ -1,7 +1,7 @@
 import 'package:e_commerce_app/Presentation/controller/home_cubit/home_cubit.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
-import 'package:e_commerce_app/data/models/category_model.dart';
+import 'package:e_commerce_app/domain/entities/category.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -17,8 +17,18 @@ class CategoryTabView extends StatelessWidget {
         if (state is HomeLoading) {
           return const Center(child: CircularProgressIndicator.adaptive());
         }
+        if (state is HomeError) {
+          return Center(child: Text(context.trError(state.message)));
+        }
         final categories =
-            state is HomeLoaded ? state.categories : dummyCategories;
+            state is HomeLoaded ? state.categories : const <Category>[];
+        if (categories.isEmpty) {
+          return Center(
+            child: Text(
+              context.isArabic ? 'لا توجد فئات متاحة بعد' : 'No categories yet',
+            ),
+          );
+        }
         return ListView.separated(
           padding: const EdgeInsets.only(bottom: 24),
           itemCount: categories.length,

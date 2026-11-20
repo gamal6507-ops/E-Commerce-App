@@ -49,7 +49,9 @@ class ProductDetailsPage extends StatelessWidget {
                 onPressed: () => _navigateBack(context),
                 icon: const Icon(Icons.arrow_back_ios_new, size: 18),
               ),
-              title: const Text('Product Details'),
+              title: Text(
+                context.isArabic ? 'تفاصيل المنتج' : 'Product Details',
+              ),
             ),
             body: Center(
               child: Padding(
@@ -57,13 +59,16 @@ class ProductDetailsPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(state.message, textAlign: TextAlign.center),
+                    Text(
+                      context.trError(state.message),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed:
                           () =>
                               cubitProductDetails.getProductDetails(productId),
-                      child: const Text('Retry'),
+                      child: Text(context.tr('retry')),
                     ),
                   ],
                 ),
@@ -396,6 +401,24 @@ class ProductDetailsPage extends StatelessWidget {
                               );
                             },
                           ),
+                          const SizedBox(height: 12),
+                          Text(
+                            product.stock > 0
+                                ? (context.isArabic
+                                    ? 'متاح في المخزون: ${product.stock}'
+                                    : 'In stock: ${product.stock}')
+                                : (context.isArabic
+                                    ? 'نفذت الكمية'
+                                    : 'Out of stock'),
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color:
+                                  product.stock > 0
+                                      ? AppColors.green
+                                      : AppColors.red,
+                            ),
+                          ),
                           const SizedBox(height: 20),
                           Text(
                             context.tr('description'),
@@ -523,9 +546,10 @@ class ProductDetailsPage extends StatelessWidget {
                             );
                           }
                           final isAdded = cartState is ProductAddedToCart;
+                          final outOfStock = product.stock <= 0;
                           return ElevatedButton.icon(
                             onPressed:
-                                isAdded
+                                (isAdded || outOfStock)
                                     ? null
                                     : () {
                                       if (cubitProductDetails.selectedSize !=
@@ -548,12 +572,18 @@ class ProductDetailsPage extends StatelessWidget {
                                       }
                                     },
                             icon: Icon(
-                              isAdded
+                              outOfStock
+                                  ? Icons.remove_shopping_cart_outlined
+                                  : isAdded
                                   ? Icons.check_circle_outline
                                   : Icons.shopping_bag_outlined,
                             ),
                             label: Text(
-                              isAdded
+                              outOfStock
+                                  ? (context.isArabic
+                                      ? 'نفذت الكمية'
+                                      : 'Out of stock')
+                                  : isAdded
                                   ? context.tr('item_added_to_cart')
                                   : context.tr('add_to_cart'),
                             ),
@@ -567,8 +597,12 @@ class ProductDetailsPage extends StatelessWidget {
             ),
           );
         } else {
-          return const Scaffold(
-            body: Center(child: Text('Something went wrong!')),
+          return Scaffold(
+            body: Center(
+              child: Text(
+                context.isArabic ? 'حدث خطأ ما!' : 'Something went wrong!',
+              ),
+            ),
           );
         }
       },

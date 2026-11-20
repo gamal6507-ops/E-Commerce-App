@@ -32,6 +32,12 @@ class Location {
     String? country,
     String? imgUrl,
     bool? isChosen,
+    String? recipient,
+    String? phone,
+    String? street,
+    String? building,
+    String? unit,
+    String? postalCode,
   }) {
     return Location(
       id: id ?? this.id,
@@ -39,12 +45,12 @@ class Location {
       country: country ?? this.country,
       imgUrl: imgUrl ?? this.imgUrl,
       isChosen: isChosen ?? this.isChosen,
-      recipient: recipient,
-      phone: phone,
-      street: street,
-      building: building,
-      unit: unit,
-      postalCode: postalCode,
+      recipient: recipient ?? this.recipient,
+      phone: phone ?? this.phone,
+      street: street ?? this.street,
+      building: building ?? this.building,
+      unit: unit ?? this.unit,
+      postalCode: postalCode ?? this.postalCode,
     );
   }
 }

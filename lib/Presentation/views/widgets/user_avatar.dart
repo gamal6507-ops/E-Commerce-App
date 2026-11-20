@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:image_picker/image_picker.dart';
@@ -179,36 +180,39 @@ Future<void> showProfilePhotoPickerSheet(
 
   Future<void> enterImageUrl(BuildContext sheetContext) async {
     Navigator.of(sheetContext).pop();
+    final ar = context.isArabic;
     final urlController = TextEditingController(
-      text: currentPhotoUrl.startsWith('http') ? currentPhotoUrl : '',
+      text: currentPhotoUrl.startsWith('https://') ? currentPhotoUrl : '',
     );
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Profile Image URL'),
+          title: Text(ar ? 'رابط صورة الحساب' : 'Profile Image URL'),
           content: TextField(
             controller: urlController,
             keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-              labelText: 'Image URL',
+            decoration: InputDecoration(
+              labelText: ar ? 'رابط الصورة (HTTPS)' : 'Image URL (HTTPS)',
               hintText: 'https://example.com/avatar.jpg',
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(context.tr('cancel')),
             ),
             TextButton(
               onPressed: () {
                 final trimmed = urlController.text.trim();
-                if (trimmed.isEmpty ||
-                    (!trimmed.startsWith('https://') &&
-                        !trimmed.startsWith('http://'))) {
+                if (trimmed.isEmpty || !trimmed.startsWith('https://')) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Enter a valid http/https image URL'),
+                    SnackBar(
+                      content: Text(
+                        ar
+                            ? 'أدخل رابط صورة يبدأ بـ https://'
+                            : 'Enter a valid https:// image URL',
+                      ),
                     ),
                   );
                   return;
@@ -216,7 +220,7 @@ Future<void> showProfilePhotoPickerSheet(
                 Navigator.of(dialogContext).pop();
                 onPhotoSelected(trimmed);
               },
-              child: const Text('Save'),
+              child: Text(context.tr('save')),
             ),
           ],
         );
@@ -225,9 +229,11 @@ Future<void> showProfilePhotoPickerSheet(
     urlController.dispose();
   }
 
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final ar = context.isArabic;
   await showModalBottomSheet<void>(
     context: context,
-    backgroundColor: AppColors.surfaceCard,
+    backgroundColor: isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -244,14 +250,15 @@ Future<void> showProfilePhotoPickerSheet(
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.borderLight,
+                    color:
+                        isDark ? AppColors.borderDark : AppColors.borderLight,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Profile Photo',
+                ar ? 'صورة الملف الشخصي' : 'Profile Photo',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.w800),
@@ -262,7 +269,7 @@ Future<void> showProfilePhotoPickerSheet(
                   Icons.photo_library_outlined,
                   color: AppColors.primaryColor,
                 ),
-                title: const Text('Choose from Gallery'),
+                title: Text(ar ? 'اختر من المعرض' : 'Choose from Gallery'),
                 onTap: () => pickFrom(ImageSource.gallery, sheetContext),
               ),
               ListTile(
@@ -270,7 +277,7 @@ Future<void> showProfilePhotoPickerSheet(
                   Icons.camera_alt_outlined,
                   color: AppColors.primaryColor,
                 ),
-                title: const Text('Take Photo'),
+                title: Text(ar ? 'التقاط صورة' : 'Take Photo'),
                 onTap: () => pickFrom(ImageSource.camera, sheetContext),
               ),
               ListTile(
@@ -278,7 +285,7 @@ Future<void> showProfilePhotoPickerSheet(
                   Icons.link_rounded,
                   color: AppColors.primaryColor,
                 ),
-                title: const Text('Use Image URL'),
+                title: Text(ar ? 'استخدام رابط صورة' : 'Use Image URL'),
                 onTap: () => enterImageUrl(sheetContext),
               ),
               if (currentPhotoUrl.isNotEmpty)
@@ -287,9 +294,9 @@ Future<void> showProfilePhotoPickerSheet(
                     Icons.delete_outline_rounded,
                     color: AppColors.red,
                   ),
-                  title: const Text(
-                    'Remove Current Photo',
-                    style: TextStyle(color: AppColors.red),
+                  title: Text(
+                    ar ? 'إزالة الصورة الحالية' : 'Remove Current Photo',
+                    style: const TextStyle(color: AppColors.red),
                   ),
                   onTap: () {
                     Navigator.of(sheetContext).pop();

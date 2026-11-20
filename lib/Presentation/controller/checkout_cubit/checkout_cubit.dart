@@ -153,6 +153,14 @@ class CheckoutCubit extends Cubit<CheckoutState> {
       return;
     }
 
+    if (_requestId == null) {
+      emit(
+        CheckoutOrderError('Please refresh checkout before placing your order'),
+      );
+      emit(currentState);
+      return;
+    }
+
     emit(CheckoutPlacingOrder());
     try {
       final currentUserId = _authRepository.currentUserId;
@@ -161,11 +169,12 @@ class CheckoutCubit extends Cubit<CheckoutState> {
         emit(currentState);
         return;
       }
+      final requestId = _requestId!;
       final prefs = await SharedPreferences.getInstance();
       final key = 'checkout_request_$currentUserId';
-      await prefs.setString(key, _requestId!);
+      await prefs.setString(key, requestId);
       final order = await _checkoutRepository.placeOrder(
-        requestId: _requestId!,
+        requestId: requestId,
         userId: currentUserId,
         items: currentState.cartItems,
         subtotal: currentState.subtotal,

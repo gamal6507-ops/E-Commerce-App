@@ -41,7 +41,7 @@ class AuthCubit extends Cubit<AuthState> {
         password,
       );
       if (result) {
-        await _saveUserData(email, username, password);
+        await _saveUserData(email, username);
         emit(const AuthDone());
       } else {
         emit(const AuthError('Register failed'));
@@ -51,11 +51,7 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> _saveUserData(
-    String email,
-    String username,
-    String password,
-  ) async {
+  Future<void> _saveUserData(String email, String username) async {
     final userId = _authRepository.currentUserId;
     if (userId == null) return;
     final userData = AppUser(

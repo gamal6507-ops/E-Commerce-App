@@ -17,15 +17,29 @@ class CatalogSearch {
             .endAt(['$prefix\uf8ff'])
             .limit(50)
             .get();
-    final category =
+    final trimmed = query.trim();
+    final categoryExact =
         await FirebaseFirestore.instance
             .collection('products')
             .where('active', isEqualTo: true)
-            .where('category', isEqualTo: query.trim())
+            .where('category', isEqualTo: trimmed)
             .limit(50)
             .get();
+    final categoryLower =
+        trimmed == prefix
+            ? null
+            : await FirebaseFirestore.instance
+                .collection('products')
+                .where('active', isEqualTo: true)
+                .where('category', isEqualTo: prefix)
+                .limit(50)
+                .get();
     final products = <String, Product>{};
-    for (final doc in [...results.docs, ...category.docs]) {
+    for (final doc in [
+      ...results.docs,
+      ...categoryExact.docs,
+      if (categoryLower != null) ...categoryLower.docs,
+    ]) {
       products[doc.id] = ProductItemModel.fromMap({
         ...doc.data(),
         'id': doc.id,

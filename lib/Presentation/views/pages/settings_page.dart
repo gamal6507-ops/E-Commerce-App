@@ -1,4 +1,5 @@
 import 'package:e_commerce_app/Presentation/controller/favorite_cubit/favorite_cubit.dart';
+import 'package:e_commerce_app/services/notification_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:e_commerce_app/Presentation/views/pages/admin_page.dart';
 import 'package:e_commerce_app/data/datasources/store_api.dart';
@@ -37,7 +38,7 @@ class SettingsPage extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(c, false),
-                child: const Text('Cancel'),
+                child: Text(context.tr('cancel')),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(c, true),
@@ -51,8 +52,11 @@ class SettingsPage extends StatelessWidget {
     if (confirmed != true) return;
     try {
       await StoreApi.instance.request('account', method: 'DELETE');
+      await NotificationService.instance.clearSession();
       await FirebaseAuth.instance.signOut();
       if (context.mounted) {
+        context.read<ProfileCubit>().reset();
+        context.read<FavoriteCubit>().reset();
         Navigator.of(
           context,
           rootNavigator: true,
@@ -62,12 +66,28 @@ class SettingsPage extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('$e')));
+        ).showSnackBar(SnackBar(content: Text(context.trError(e))));
       }
     }
   }
 
   Future<void> _showChangePasswordDialog(BuildContext context) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final hasPasswordProvider =
+        currentUser?.providerData.any((p) => p.providerId == 'password') ??
+        false;
+    if (!hasPasswordProvider) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.isArabic
+                ? 'تغيير كلمة المرور متاح فقط لحسابات البريد الإلكتروني وكلمة المرور'
+                : 'Password change is only available for email/password accounts',
+          ),
+        ),
+      );
+      return;
+    }
     final profileCubit = context.read<ProfileCubit>();
     final passwordController = TextEditingController();
     final currentPassword = TextEditingController();

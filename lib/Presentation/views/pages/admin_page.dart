@@ -16,9 +16,13 @@ class _AdminPageState extends State<AdminPage> {
   @override
   void initState() {
     super.initState();
-    _access = FirebaseAuth.instance.currentUser!
-        .getIdTokenResult(true)
-        .then((token) => token.claims?['admin'] == true);
+    final user = FirebaseAuth.instance.currentUser;
+    _access =
+        user == null
+            ? Future.value(false)
+            : user
+                .getIdTokenResult(true)
+                .then((token) => token.claims?['admin'] == true);
   }
 
   bool _importing = false;
@@ -70,17 +74,30 @@ class _AdminPageState extends State<AdminPage> {
     bool saving = false;
     String? error;
     if (!mounted) return;
+    const fieldLabelsAr = {
+      'name': 'اسم المنتج',
+      'description': 'الوصف',
+      'category': 'الفئة',
+      'imgUrl': 'رابط الصورة (HTTPS)',
+      'price': 'السعر (EGP)',
+      'stock': 'المخزون',
+    };
+    const fieldLabelsEn = {
+      'name': 'Product name',
+      'description': 'Description',
+      'category': 'Category',
+      'imgUrl': 'Image URL (HTTPS)',
+      'price': 'Price (EGP)',
+      'stock': 'Stock',
+    };
+    final ar = context.isArabic;
     await showDialog<void>(
       context: context,
       builder:
           (dialog) => StatefulBuilder(
             builder:
                 (dialog, setDialog) => AlertDialog(
-                  title: Text(
-                    context.isArabic
-                        ? 'المنتج والمخزون'
-                        : 'Product and inventory',
-                  ),
+                  title: Text(ar ? 'المنتج والمخزون' : 'Product and inventory'),
                   content: SizedBox(
                     width: 450,
                     child: SingleChildScrollView(
@@ -94,20 +111,23 @@ class _AdminPageState extends State<AdminPage> {
                                   ['price', 'stock'].contains(entry.key)
                                       ? TextInputType.number
                                       : TextInputType.text,
-                              decoration: InputDecoration(labelText: entry.key),
+                              decoration: InputDecoration(
+                                labelText:
+                                    ar
+                                        ? fieldLabelsAr[entry.key]
+                                        : fieldLabelsEn[entry.key],
+                              ),
                             ),
                           SwitchListTile(
                             title: Text(
-                              context.isArabic
-                                  ? 'متاح للبيع'
-                                  : 'Available for sale',
+                              ar ? 'متاح للبيع' : 'Available for sale',
                             ),
                             value: active,
                             onChanged: (v) => setDialog(() => active = v),
                           ),
                           SwitchListTile(
                             title: Text(
-                              context.isArabic
+                              ar
                                   ? 'يتطلب مقاس ملابس'
                                   : 'Requires clothing size',
                             ),
@@ -126,14 +146,17 @@ class _AdminPageState extends State<AdminPage> {
                   actions: [
                     TextButton(
                       onPressed: saving ? null : () => Navigator.pop(dialog),
-                      child: const Text('Cancel'),
+                      child: Text(context.tr('cancel')),
                     ),
                     FilledButton(
                       onPressed:
                           saving
                               ? null
                               : () async {
-                                setDialog(() => saving = true);
+                                setDialog(() {
+                                  saving = true;
+                                  error = null;
+                                });
                                 try {
                                   await StoreApi.instance.request(
                                     'product',
@@ -147,10 +170,10 @@ class _AdminPageState extends State<AdminPage> {
                                         ].contains(entry.key))
                                           entry.key: entry.value.text.trim(),
                                       'price': double.tryParse(
-                                        fields['price']!.text,
+                                        fields['price']!.text.trim(),
                                       ),
                                       'stock': int.tryParse(
-                                        fields['stock']!.text,
+                                        fields['stock']!.text.trim(),
                                       ),
                                       'active': active,
                                       'requiresSize': sizes,
@@ -166,7 +189,7 @@ class _AdminPageState extends State<AdminPage> {
                                   }
                                 }
                               },
-                      child: const Text('Save'),
+                      child: Text(context.tr('save')),
                     ),
                   ],
                 ),
@@ -189,7 +212,13 @@ class _AdminPageState extends State<AdminPage> {
           return const Center(child: CircularProgressIndicator());
         }
         if (access.data != true) {
-          return const Center(child: Text('Administrator access required'));
+          return Center(
+            child: Text(
+              context.isArabic
+                  ? 'هذه الصفحة متاحة لمدير المتجر فقط'
+                  : 'Administrator access required',
+            ),
+          );
         }
         return Column(
           children: [
@@ -245,7 +274,9 @@ class _AdminPageState extends State<AdminPage> {
                         ListTile(
                           title: Text(doc.data()['name'] ?? doc.id),
                           subtitle: Text(
-                            'EGP ${doc.data()['price']} • Stock: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'Active' : 'Hidden'}',
+                            context.isArabic
+                                ? 'EGP ${doc.data()['price']} • المخزون: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'متاح' : 'مخفي'}${doc.data()['demo'] == true ? ' • تجريبي' : ''}'
+                                : 'EGP ${doc.data()['price']} • Stock: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'Active' : 'Hidden'}${doc.data()['demo'] == true ? ' • Demo' : ''}',
                           ),
                           trailing: const Icon(Icons.edit),
                           onTap: () => _edit({...doc.data(), 'id': doc.id}),

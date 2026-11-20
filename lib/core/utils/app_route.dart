@@ -13,4 +13,5 @@ class AppRoute {
   static const String favoritesRoute = '/favorites';
   static const String settingsRoute = '/settings';
   static const String editProfileRoute = '/edit-profile';
+  static const String ordersRoute = '/orders';
 }

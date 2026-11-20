@@ -188,6 +188,7 @@ class ProductLocalCache {
     _memoryProducts = null;
     _memoryCategories = null;
     _memoryCarousel = null;
+    _memoryTimestamp = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_productsKey);
     await prefs.remove(_categoriesKey);

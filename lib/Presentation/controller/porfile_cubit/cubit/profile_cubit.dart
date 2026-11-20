@@ -38,12 +38,20 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  AppUser? _currentUser(ProfileState currentState) {
+    if (currentState is ProfileLoaded) return currentState.user;
+    if (currentState is ProfileUpdatedSuccess) return currentState.user;
+    return null;
+  }
+
   Future<void> updateUserName({required String name}) async {
+    final previousUser = _currentUser(state);
     emit(ProfileUpdating());
     try {
       final currentUserId = _authRepository.currentUserId;
       if (currentUserId == null) {
         emit(const ProfileUpdatingFailed(error: 'User is not logged in'));
+        if (previousUser != null) emit(ProfileLoaded(user: previousUser));
         return;
       }
       await _profileRepository.changeUserName(currentUserId, name);
@@ -54,15 +62,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     } catch (e) {
       if (isClosed) return;
       emit(ProfileUpdatingFailed(error: e.toString()));
+      if (previousUser != null) emit(ProfileLoaded(user: previousUser));
     }
   }
 
   Future<void> updateEmail({required String newEmail}) async {
+    final previousUser = _currentUser(state);
     emit(ProfileUpdating());
     try {
       final currentUserId = _authRepository.currentUserId;
       if (currentUserId == null) {
         emit(const ProfileUpdatingFailed(error: 'User is not logged in'));
+        if (previousUser != null) emit(ProfileLoaded(user: previousUser));
         return;
       }
       await _profileRepository.changeUserEmail(currentUserId, newEmail);
@@ -73,15 +84,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     } catch (e) {
       if (isClosed) return;
       emit(ProfileUpdatingFailed(error: e.toString()));
+      if (previousUser != null) emit(ProfileLoaded(user: previousUser));
     }
   }
 
   Future<void> updatePassword({required String newPassword}) async {
+    final previousUser = _currentUser(state);
     emit(ProfileUpdating());
     try {
       final currentUserId = _authRepository.currentUserId;
       if (currentUserId == null) {
         emit(const ProfileUpdatingFailed(error: 'User is not logged in'));
+        if (previousUser != null) emit(ProfileLoaded(user: previousUser));
         return;
       }
       await _profileRepository.changeUserPassword(currentUserId, newPassword);
@@ -92,15 +106,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     } catch (e) {
       if (isClosed) return;
       emit(ProfileUpdatingFailed(error: e.toString()));
+      if (previousUser != null) emit(ProfileLoaded(user: previousUser));
     }
   }
 
   Future<void> updateProfilePhoto({required String photoUrl}) async {
+    final previousUser = _currentUser(state);
     emit(ProfileUpdating());
     try {
       final currentUserId = _authRepository.currentUserId;
       if (currentUserId == null) {
         emit(const ProfileUpdatingFailed(error: 'User is not logged in'));
+        if (previousUser != null) emit(ProfileLoaded(user: previousUser));
         return;
       }
       await _profileRepository.updateUserPhoto(currentUserId, photoUrl);
@@ -111,6 +128,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     } catch (e) {
       if (isClosed) return;
       emit(ProfileUpdatingFailed(error: e.toString()));
+      if (previousUser != null) emit(ProfileLoaded(user: previousUser));
     }
   }
 }

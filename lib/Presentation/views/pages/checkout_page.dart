@@ -320,6 +320,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(context.tr('order_placed_title')),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed:
+                        () => Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pushNamed(AppRoute.ordersRoute),
+                    child: Text(context.tr('my_orders')),
+                  ),
                   TextButton(
                     onPressed: cubit.getCheckoutContent,
                     child: Text(
@@ -553,6 +562,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   textAlign: TextAlign.center,
                                 ),
                                 actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(dialogContext).pop();
+                                      Navigator.of(
+                                        context,
+                                        rootNavigator: true,
+                                      ).pushNamedAndRemoveUntil(
+                                        AppRoute.ordersRoute,
+                                        (route) =>
+                                            route.settings.name ==
+                                            AppRoute.homeRoute,
+                                      );
+                                    },
+                                    child: Text(context.tr('my_orders')),
+                                  ),
                                   ElevatedButton(
                                     onPressed: () {
                                       Navigator.of(dialogContext).pop();
@@ -632,11 +656,35 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       textAlign: TextAlign.center,
                       style: TextStyle(color: textColor),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => cubit.getCheckoutContent(),
                       child: Text(context.tr('refresh')),
                     ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(context)
+                            .pushNamed(AppRoute.chooseLocation)
+                            .then(
+                              (_) async => await cubit.getCheckoutContent(),
+                            );
+                      },
+                      child: Text(
+                        context.isArabic
+                            ? 'تعديل عنوان التوصيل'
+                            : 'Manage Shipping Address',
+                      ),
+                    ),
+                    if (Navigator.of(context).canPop()) ...[
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(
+                          context.isArabic ? 'العودة للسلة' : 'Back to Cart',
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

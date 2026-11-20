@@ -4,6 +4,7 @@
   "buildCommand": "bash scripts/build-web.sh",
   "outputDirectory": "build/web",
   "functions": {"api/store.mjs": {"maxDuration": 30}},
+  "redirects": [{"source":"/download/android","destination":"https://github.com/gamal6507-ops/E-Commerce-App/releases/download/v1.0.0-android-debug.1/verve-store-1.0.0-debug.apk","permanent":false}],
   "rewrites": [{"source":"/((?!api/|assets/|canvaskit/|icons/|splash/|.*\\.).*)","destination":"/index.html"}],
   "headers": [
     {"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"},{"key":"X-Frame-Options","value":"DENY"}]},

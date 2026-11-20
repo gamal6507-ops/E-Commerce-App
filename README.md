@@ -2,6 +2,8 @@
 
 Flutter storefront with Arabic/English, Firebase authentication and private data, and a Vercel Node API for trusted order processing.
 
+[Open the web store](https://verve-store-delta.vercel.app/) · [Download the Android test APK](https://verve-store-delta.vercel.app/download/android)
+
 ## Run and verify
 
 Use Flutter **3.50.0**, Node **24** and Java **21** (Firestore emulator).

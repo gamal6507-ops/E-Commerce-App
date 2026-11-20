@@ -8,6 +8,7 @@ android
 ios
 macos
 .agents
+.claude
 *.log
 test
 server/test

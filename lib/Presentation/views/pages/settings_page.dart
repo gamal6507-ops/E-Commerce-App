@@ -13,6 +13,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/notifications_sheet.da
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -442,251 +443,280 @@ class SettingsPage extends StatelessWidget {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.tr('settings_general'),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              EmptyListTile(
-                ontap:
-                    () => Navigator.of(
-                      context,
-                    ).pushNamed(AppRoute.editProfileRoute),
-                leadingIcon: const Icon(Icons.person_outline_rounded),
-                title: context.tr('settings_edit_profile'),
-                trailingIcon: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey1,
+          child: ResponsiveContainer(
+            maxWidth: 920,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.tr('settings_general'),
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              EmptyListTile(
-                ontap: () => _showChangePasswordDialog(context),
-                leadingIcon: const Icon(Icons.password_rounded),
-                title: context.tr('settings_change_password'),
-                trailingIcon: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey1,
+                const SizedBox(height: 8),
+                EmptyListTile(
+                  ontap:
+                      () => Navigator.of(
+                        context,
+                      ).pushNamed(AppRoute.editProfileRoute),
+                  leadingIcon: const Icon(Icons.person_outline_rounded),
+                  title: context.tr('settings_edit_profile'),
+                  trailingIcon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.grey1,
+                  ),
                 ),
-              ),
-              EmptyListTile(
-                ontap: () => showNotificationsSheet(context),
-                leadingIcon: const Icon(Icons.notifications_none_rounded),
-                title: context.tr('settings_notifications'),
-                trailingIcon: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey1,
+                EmptyListTile(
+                  ontap: () => _showChangePasswordDialog(context),
+                  leadingIcon: const Icon(Icons.password_rounded),
+                  title: context.tr('settings_change_password'),
+                  trailingIcon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.grey1,
+                  ),
                 ),
-              ),
-              EmptyListTile(
-                ontap: () => _showSecurityDialog(context),
-                leadingIcon: const Icon(Icons.lock_outline_rounded),
-                title: context.tr('settings_security'),
-                trailingIcon: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey1,
+                EmptyListTile(
+                  ontap: () => showNotificationsSheet(context),
+                  leadingIcon: const Icon(Icons.notifications_none_rounded),
+                  title: context.tr('settings_notifications'),
+                  trailingIcon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.grey1,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                context.tr('settings_preferences'),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
-                builder: (context, prefState) {
-                  return EmptyListTile(
-                    ontap: () => _showThemeSelectionSheet(context),
-                    leadingIcon: Icon(
-                      prefState.themeMode == ThemeMode.dark
-                          ? Icons.dark_mode_rounded
-                          : Icons.light_mode_rounded,
-                      color: AppColors.accentColor,
-                    ),
-                    title: context.tr('settings_theme'),
-                    subtitle: _getThemeModeTitle(context, prefState.themeMode),
-                    trailingIcon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.grey1,
-                    ),
-                  );
-                },
-              ),
-              BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
-                builder: (context, prefState) {
-                  return EmptyListTile(
-                    ontap: () => _showLanguageSelectionSheet(context),
-                    leadingIcon: const Icon(
-                      Icons.language_rounded,
-                      color: AppColors.blue,
-                    ),
-                    title: context.tr('settings_language'),
-                    subtitle: _getLanguageTitle(context, prefState.locale),
-                    trailingIcon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.grey1,
-                    ),
-                  );
-                },
-              ),
-              EmptyListTile(
-                ontap:
-                    () => _showInfoDialog(
-                      context,
-                      title: context.tr('settings_privacy'),
-                      content:
-                          context.isArabic
-                              ? 'نستخدم Firebase لتسجيل الدخول وحفظ بيانات الحساب والعناوين والسلة والطلبات. لا نحفظ كلمة المرور أو بيانات البطاقة. يمكنك حذف حسابك من الإعدادات. تُستخدم بيانات التوصيل لتنفيذ طلبك فقط. لا توجد خدمات دفع إلكتروني مفعّلة حاليًا.'
-                              : 'We use Firebase for sign-in and account, delivery, cart and order data. We do not store passwords or card details. Delete your account from Settings. Delivery details are used to fulfill your order. Electronic payments are not enabled.',
-                    ),
-                leadingIcon: const Icon(Icons.privacy_tip_outlined),
-                title: context.tr('settings_privacy'),
-                trailingIcon: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey1,
+                EmptyListTile(
+                  ontap: () => _showSecurityDialog(context),
+                  leadingIcon: const Icon(Icons.lock_outline_rounded),
+                  title: context.tr('settings_security'),
+                  trailingIcon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.grey1,
+                  ),
                 ),
-              ),
-              EmptyListTile(
-                ontap:
-                    () => _showInfoDialog(
-                      context,
-                      title: context.tr('settings_help'),
-                      content:
-                          context.isArabic
-                              ? 'للدعم ومتابعة الطلبات تواصل معنا عبر واتساب: 01095930009'
-                              : 'For support and order inquiries, contact WhatsApp: +20 1095930009.',
-                    ),
-                leadingIcon: const Icon(Icons.help_outline_rounded),
-                title: context.tr('settings_help'),
-                trailingIcon: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.grey1,
+                const SizedBox(height: 18),
+                Text(
+                  context.tr('settings_preferences'),
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              FutureBuilder<IdTokenResult>(
-                future: FirebaseAuth.instance.currentUser?.getIdTokenResult(),
-                builder:
-                    (context, snapshot) =>
-                        snapshot.data?.claims?['admin'] == true
-                            ? ListTile(
-                              leading: const Icon(
-                                Icons.admin_panel_settings_outlined,
-                              ),
-                              title: Text(
-                                context.isArabic
-                                    ? 'إدارة المتجر'
-                                    : 'Store administration',
-                              ),
-                              onTap:
-                                  () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const AdminPage(),
+                const SizedBox(height: 8),
+                BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
+                  builder: (context, prefState) {
+                    return EmptyListTile(
+                      ontap: () => _showThemeSelectionSheet(context),
+                      leadingIcon: Icon(
+                        prefState.themeMode == ThemeMode.dark
+                            ? Icons.dark_mode_rounded
+                            : Icons.light_mode_rounded,
+                        color: AppColors.accentColor,
+                      ),
+                      title: context.tr('settings_theme'),
+                      subtitle: _getThemeModeTitle(
+                        context,
+                        prefState.themeMode,
+                      ),
+                      trailingIcon: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.grey1,
+                      ),
+                    );
+                  },
+                ),
+                BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
+                  builder: (context, prefState) {
+                    return EmptyListTile(
+                      ontap: () => _showLanguageSelectionSheet(context),
+                      leadingIcon: const Icon(
+                        Icons.language_rounded,
+                        color: AppColors.blue,
+                      ),
+                      title: context.tr('settings_language'),
+                      subtitle: _getLanguageTitle(context, prefState.locale),
+                      trailingIcon: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.grey1,
+                      ),
+                    );
+                  },
+                ),
+                EmptyListTile(
+                  ontap:
+                      () => _showInfoDialog(
+                        context,
+                        title: context.tr('settings_privacy'),
+                        content:
+                            context.isArabic
+                                ? 'نستخدم Firebase لتسجيل الدخول وحفظ بيانات الحساب والعناوين والسلة والطلبات. لا نحفظ كلمة المرور أو بيانات البطاقة. يمكنك حذف حسابك من الإعدادات. تُستخدم بيانات التوصيل لتنفيذ طلبك فقط. لا توجد خدمات دفع إلكتروني مفعّلة حاليًا.'
+                                : 'We use Firebase for sign-in and account, delivery, cart and order data. We do not store passwords or card details. Delete your account from Settings. Delivery details are used to fulfill your order. Electronic payments are not enabled.',
+                      ),
+                  leadingIcon: const Icon(Icons.privacy_tip_outlined),
+                  title: context.tr('settings_privacy'),
+                  trailingIcon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.grey1,
+                  ),
+                ),
+                EmptyListTile(
+                  ontap:
+                      () => _showInfoDialog(
+                        context,
+                        title: context.tr('settings_help'),
+                        content:
+                            context.isArabic
+                                ? 'للدعم ومتابعة الطلبات تواصل معنا عبر واتساب: 01095930009'
+                                : 'For support and order inquiries, contact WhatsApp: +20 1095930009.',
+                      ),
+                  leadingIcon: const Icon(Icons.help_outline_rounded),
+                  title: context.tr('settings_help'),
+                  trailingIcon: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.grey1,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FutureBuilder<IdTokenResult>(
+                  future: FirebaseAuth.instance.currentUser?.getIdTokenResult(),
+                  builder:
+                      (context, snapshot) =>
+                          snapshot.data?.claims?['admin'] == true
+                              ? ListTile(
+                                leading: const Icon(
+                                  Icons.admin_panel_settings_outlined,
+                                ),
+                                title: Text(
+                                  context.isArabic
+                                      ? 'إدارة المتجر'
+                                      : 'Store administration',
+                                ),
+                                onTap:
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const AdminPage(),
+                                      ),
                                     ),
-                                  ),
-                            )
-                            : const SizedBox.shrink(),
-              ),
-              ListTile(
-                leading: const Icon(Icons.chat_outlined),
-                title: Text(
-                  context.isArabic
-                      ? 'واتساب الدعم: 01095930009'
-                      : 'WhatsApp support: +20 1095930009',
+                              )
+                              : const SizedBox.shrink(),
                 ),
-                onTap:
-                    () => launchUrl(
-                      Uri.parse('https://wa.me/201095930009'),
-                      mode: LaunchMode.externalApplication,
-                    ),
-              ),
-              if (FirebaseAuth.instance.currentUser?.emailVerified == false)
                 ListTile(
-                  leading: const Icon(Icons.mark_email_read_outlined),
+                  leading: const Icon(Icons.chat_outlined),
                   title: Text(
                     context.isArabic
-                        ? 'تأكيد البريد الإلكتروني'
-                        : 'Verify email',
+                        ? 'واتساب الدعم: 01095930009'
+                        : 'WhatsApp support: +20 1095930009',
                   ),
-                  onTap: () async {
-                    try {
-                      await FirebaseAuth.instance.currentUser
-                          ?.sendEmailVerification();
-                      if (context.mounted) {
+                  onTap:
+                      () => launchUrl(
+                        Uri.parse('https://wa.me/201095930009'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                ),
+                if (FirebaseAuth.instance.currentUser?.emailVerified == false)
+                  ListTile(
+                    leading: const Icon(Icons.mark_email_read_outlined),
+                    title: Text(
+                      context.isArabic
+                          ? 'تأكيد البريد الإلكتروني'
+                          : 'Verify email',
+                    ),
+                    onTap: () async {
+                      try {
+                        await FirebaseAuth.instance.currentUser
+                            ?.sendEmailVerification();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                context.isArabic
+                                    ? 'راجع بريدك لتأكيد الحساب'
+                                    : 'Check your inbox to verify your account',
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('$e')));
+                        }
+                      }
+                    },
+                  ),
+                if (FirebaseAuth.instance.currentUser != null) ...[
+                  ListTile(
+                    leading: const Icon(
+                      Icons.delete_forever,
+                      color: Colors.red,
+                    ),
+                    title: Text(
+                      context.isArabic ? 'حذف الحساب' : 'Delete account',
+                    ),
+                    onTap: () => _deleteAccount(context),
+                  ),
+                  BlocConsumer<AuthCubit, AuthState>(
+                    bloc: cubit,
+                    listenWhen:
+                        (previous, current) =>
+                            current is AuthLoggedOut ||
+                            current is AuthLogOutError,
+                    listener: (context, state) {
+                      if (state is AuthLoggedOut) {
+                        context.read<ProfileCubit>().reset();
+                        context.read<FavoriteCubit>().reset();
+                        Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pushNamedAndRemoveUntil(
+                          AppRoute.homeRoute,
+                          (route) => false,
+                        );
+                      } else if (state is AuthLogOutError) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                              context.isArabic
-                                  ? 'راجع بريدك لتأكيد الحساب'
-                                  : 'Check your inbox to verify your account',
-                            ),
+                            content: Text(context.trError(state.message)),
                           ),
                         );
                       }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text('$e')));
+                    },
+                    buildWhen:
+                        (previous, current) =>
+                            current is AuthLoggingOut ||
+                            current is AuthLoggedOut ||
+                            current is AuthLogOutError,
+                    builder: (context, state) {
+                      if (state is AuthLoggingOut) {
+                        return MainButton(isLoading: true);
                       }
-                    }
-                  },
-                ),
-              ListTile(
-                leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: Text(context.isArabic ? 'حذف الحساب' : 'Delete account'),
-                onTap: () => _deleteAccount(context),
-              ),
-              BlocConsumer<AuthCubit, AuthState>(
-                bloc: cubit,
-                listenWhen:
-                    (previous, current) =>
-                        current is AuthLoggedOut || current is AuthLogOutError,
-                listener: (context, state) {
-                  if (state is AuthLoggedOut) {
-                    context.read<ProfileCubit>().reset();
-                    context.read<FavoriteCubit>().reset();
-                    Navigator.of(
-                      context,
-                      rootNavigator: true,
-                    ).pushNamedAndRemoveUntil(
-                      AppRoute.loginRoute,
-                      (route) => false,
-                    );
-                  } else if (state is AuthLogOutError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(context.trError(state.message))),
-                    );
-                  }
-                },
-                buildWhen:
-                    (previous, current) =>
-                        current is AuthLoggingOut ||
-                        current is AuthLoggedOut ||
-                        current is AuthLogOutError,
-                builder: (context, state) {
-                  if (state is AuthLoggingOut) {
-                    return MainButton(isLoading: true);
-                  }
-                  return EmptyListTile(
-                    ontap: () async => await cubit.logout(),
+                      return EmptyListTile(
+                        ontap: () async => await cubit.logout(),
+                        leadingIcon: const Icon(
+                          Icons.logout_rounded,
+                          color: AppColors.red,
+                        ),
+                        title: context.tr('settings_logout'),
+                        titleColor: AppColors.red,
+                      );
+                    },
+                  ),
+                ] else
+                  EmptyListTile(
+                    ontap:
+                        () => Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).pushNamed(AppRoute.loginRoute),
                     leadingIcon: const Icon(
-                      Icons.logout_rounded,
-                      color: AppColors.red,
+                      Icons.login_rounded,
+                      color: AppColors.accentColor,
                     ),
-                    title: context.tr('settings_logout'),
-                    titleColor: AppColors.red,
-                  );
-                },
-              ),
-            ],
+                    title: context.tr('sign_in'),
+                    titleColor: AppColors.accentColor,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

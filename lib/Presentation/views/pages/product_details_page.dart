@@ -5,7 +5,9 @@ import 'package:e_commerce_app/Presentation/views/widgets/counter_widget.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/domain/entities/product.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,9 +26,30 @@ class ProductDetailsPage extends StatelessWidget {
     }
   }
 
+  void _promptSignIn(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.isArabic
+              ? 'يرجى تسجيل الدخول للمتابعة'
+              : 'Please sign in to continue',
+        ),
+        action: SnackBarAction(
+          label: context.tr('sign_in'),
+          onPressed:
+              () => Navigator.of(
+                context,
+                rootNavigator: true,
+              ).pushNamed(AppRoute.loginRoute),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final wide = size.width >= 850;
     final cubitProductDetails = BlocProvider.of<ProductDetailsCubit>(context);
     final cubitFavoriteProduct = BlocProvider.of<FavoriteCubit>(context);
 
@@ -87,6 +110,338 @@ class ProductDetailsPage extends StatelessWidget {
           final textColor = isDark ? AppColors.textDark : AppColors.black;
           final subtextColor =
               isDark ? AppColors.textSecondaryDark : AppColors.grey1;
+
+          final heroImage = Hero(
+            tag: 'product_${product.id}',
+            child: CachedNetworkImage(
+              imageUrl: product.imgUrl,
+              fit: BoxFit.contain,
+              placeholder:
+                  (_, __) =>
+                      const Center(child: CircularProgressIndicator.adaptive()),
+              errorWidget:
+                  (_, __, ___) => const Center(
+                    child: Icon(
+                      Icons.image_not_supported_outlined,
+                      size: 48,
+                      color: AppColors.grey1,
+                    ),
+                  ),
+            ),
+          );
+
+          final detailsContent = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      product.name,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall!.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          isDark
+                              ? AppColors.surfaceSoftDark
+                              : AppColors.accentSoft,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.star_rounded,
+                          color: AppColors.yellow,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          product.averageRate.toStringAsFixed(1),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    product.requiresSize
+                        ? context.tr('select_size')
+                        : (context.isArabic ? 'الكمية' : 'Quantity'),
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                  BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
+                    bloc: cubitProductDetails,
+                    buildWhen:
+                        (previous, current) =>
+                            current is QuantityCounterLoaded ||
+                            current is ProductDetailsLoaded,
+                    builder: (context, qtyState) {
+                      final qty =
+                          qtyState is QuantityCounterLoaded
+                              ? qtyState.value
+                              : cubitProductDetails.quantity;
+                      return CounterWidget(
+                        value: qty,
+                        onIncrement:
+                            () => cubitProductDetails.incrementCounter(
+                              product.id,
+                            ),
+                        onDecrement:
+                            () => cubitProductDetails.decrementCounter(
+                              product.id,
+                            ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
+                bloc: cubitProductDetails,
+                buildWhen:
+                    (previous, current) =>
+                        current is SizeSelected ||
+                        current is ProductDetailsLoaded,
+                builder: (context, sizeState) {
+                  final currentSize =
+                      sizeState is SizeSelected
+                          ? sizeState.size
+                          : cubitProductDetails.selectedSize;
+                  return Wrap(
+                    spacing: 10,
+                    children:
+                        ProductSize.values
+                            .where(
+                              (s) =>
+                                  product.requiresSize
+                                      ? s != ProductSize.none
+                                      : s == ProductSize.none,
+                            )
+                            .map((itemSize) {
+                              final isSelected = currentSize == itemSize;
+                              return ChoiceChip(
+                                label: Text(
+                                  itemSize == ProductSize.none
+                                      ? (context.isArabic ? 'قطعة' : 'Item')
+                                      : itemSize.name,
+                                ),
+                                selected: isSelected,
+                                showCheckmark: false,
+                                selectedColor:
+                                    isDark
+                                        ? AppColors.accentColor
+                                        : AppColors.primaryColor,
+                                backgroundColor: softBg,
+                                labelStyle: TextStyle(
+                                  color:
+                                      isSelected ? AppColors.white1 : textColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color:
+                                        isSelected
+                                            ? (isDark
+                                                ? AppColors.accentColor
+                                                : AppColors.primaryColor)
+                                            : borderColor,
+                                  ),
+                                ),
+                                onSelected:
+                                    (_) => cubitProductDetails.selectSize(
+                                      itemSize,
+                                    ),
+                              );
+                            })
+                            .toList(),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                product.stock > 0
+                    ? (context.isArabic
+                        ? 'متاح في المخزون: ${product.stock}'
+                        : 'In stock: ${product.stock}')
+                    : (context.isArabic ? 'نفذت الكمية' : 'Out of stock'),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: product.stock > 0 ? AppColors.green : AppColors.red,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                context.tr('description'),
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                product.description.isNotEmpty
+                    ? product.description
+                    : context.tr('default_product_desc'),
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: subtextColor,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          );
+
+          final actionBarRow = Row(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('price'),
+                    style: TextStyle(
+                      color: subtextColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
+                    bloc: cubitProductDetails,
+                    buildWhen:
+                        (previous, current) =>
+                            current is QuantityCounterLoaded ||
+                            current is ProductDetailsLoaded,
+                    builder: (context, qtyState) {
+                      final qty =
+                          qtyState is QuantityCounterLoaded
+                              ? qtyState.value
+                              : cubitProductDetails.quantity;
+                      return Text(
+                        'EGP ${(product.price * qty).toStringAsFixed(2)}',
+                        style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.accentColor,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: BlocConsumer<ProductDetailsCubit, ProductDetailsState>(
+                  bloc: cubitProductDetails,
+                  listenWhen:
+                      (previous, current) =>
+                          current is ProductAddedToCart ||
+                          current is ProductAddToCartError,
+                  listener: (context, cartState) {
+                    if (cartState is ProductAddedToCart) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(context.tr('item_added_to_cart')),
+                        ),
+                      );
+                    } else if (cartState is ProductAddToCartError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(context.trError(cartState.message)),
+                        ),
+                      );
+                    }
+                  },
+                  buildWhen:
+                      (previous, current) =>
+                          current is ProductAddedToCart ||
+                          current is ProductAddingToCart ||
+                          current is ProductAddToCartError ||
+                          current is SizeSelected ||
+                          current is QuantityCounterLoaded,
+                  builder: (context, cartState) {
+                    if (cartState is ProductAddingToCart) {
+                      return const ElevatedButton(
+                        onPressed: null,
+                        child: SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator.adaptive(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    }
+                    final isAdded = cartState is ProductAddedToCart;
+                    final outOfStock = product.stock <= 0;
+                    return ElevatedButton.icon(
+                      onPressed:
+                          (isAdded || outOfStock)
+                              ? null
+                              : () {
+                                if (FirebaseAuth.instance.currentUser == null) {
+                                  _promptSignIn(context);
+                                  return;
+                                }
+                                if (cubitProductDetails.selectedSize != null) {
+                                  cubitProductDetails.addToCart(product.id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        context.trError(
+                                          'Please select a size first',
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                      icon: Icon(
+                        outOfStock
+                            ? Icons.remove_shopping_cart_outlined
+                            : isAdded
+                            ? Icons.check_circle_outline
+                            : Icons.shopping_bag_outlined,
+                      ),
+                      label: Text(
+                        outOfStock
+                            ? (context.isArabic
+                                ? 'نفذت الكمية'
+                                : 'Out of stock')
+                            : isAdded
+                            ? context.tr('item_added_to_cart')
+                            : context.tr('add_to_cart'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
 
           return Scaffold(
             backgroundColor:
@@ -167,8 +522,14 @@ class ProductDetailsPage extends StatelessWidget {
                           onTap:
                               isFavLoading
                                   ? null
-                                  : () =>
-                                      cubitFavoriteProduct.setFavorite(product),
+                                  : () {
+                                    if (FirebaseAuth.instance.currentUser ==
+                                        null) {
+                                      _promptSignIn(context);
+                                      return;
+                                    }
+                                    cubitFavoriteProduct.setFavorite(product);
+                                  },
                           child: Padding(
                             padding: const EdgeInsets.all(10.0),
                             child:
@@ -195,406 +556,109 @@ class ProductDetailsPage extends StatelessWidget {
                 ),
               ],
             ),
-            body: Column(
-              children: [
-                SizedBox(
-                  height: size.height * 0.32,
-                  width: double.infinity,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28.0,
-                      vertical: 12.0,
-                    ),
-                    child: Hero(
-                      tag: 'product_${product.id}',
-                      child: CachedNetworkImage(
-                        imageUrl: product.imgUrl,
-                        fit: BoxFit.contain,
-                        placeholder:
-                            (_, __) => const Center(
-                              child: CircularProgressIndicator.adaptive(),
-                            ),
-                        errorWidget:
-                            (_, __, ___) => const Center(
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                size: 48,
-                                color: AppColors.grey1,
-                              ),
-                            ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(28),
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  product.name,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.headlineSmall!.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: textColor,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
+            body:
+                wide
+                    ? SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                      child: ResponsiveContainer(
+                        maxWidth: 1120,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 5,
+                              child: Container(
+                                height: 460,
+                                padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color:
-                                      isDark
-                                          ? AppColors.surfaceSoftDark
-                                          : AppColors.accentSoft,
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: borderColor),
                                 ),
-                                child: Row(
+                                child: heroImage,
+                              ),
+                            ),
+                            const SizedBox(width: 28),
+                            Expanded(
+                              flex: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(28),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(
-                                      Icons.star_rounded,
-                                      color: AppColors.yellow,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      product.averageRate.toStringAsFixed(1),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: textColor,
-                                      ),
-                                    ),
+                                    detailsContent,
+                                    const SizedBox(height: 28),
+                                    Divider(color: borderColor),
+                                    const SizedBox(height: 18),
+                                    actionBarRow,
                                   ],
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                product.requiresSize
-                                    ? context.tr('select_size')
-                                    : (context.isArabic
-                                        ? 'الكمية'
-                                        : 'Quantity'),
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleMedium!.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
-                              ),
-                              BlocBuilder<
-                                ProductDetailsCubit,
-                                ProductDetailsState
-                              >(
-                                bloc: cubitProductDetails,
-                                buildWhen:
-                                    (previous, current) =>
-                                        current is QuantityCounterLoaded ||
-                                        current is ProductDetailsLoaded,
-                                builder: (context, qtyState) {
-                                  final qty =
-                                      qtyState is QuantityCounterLoaded
-                                          ? qtyState.value
-                                          : cubitProductDetails.quantity;
-                                  return CounterWidget(
-                                    value: qty,
-                                    onIncrement:
-                                        () => cubitProductDetails
-                                            .incrementCounter(product.id),
-                                    onDecrement:
-                                        () => cubitProductDetails
-                                            .decrementCounter(product.id),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
-                            bloc: cubitProductDetails,
-                            buildWhen:
-                                (previous, current) =>
-                                    current is SizeSelected ||
-                                    current is ProductDetailsLoaded,
-                            builder: (context, sizeState) {
-                              final currentSize =
-                                  sizeState is SizeSelected
-                                      ? sizeState.size
-                                      : cubitProductDetails.selectedSize;
-                              return Wrap(
-                                spacing: 10,
-                                children:
-                                    ProductSize.values
-                                        .where(
-                                          (s) =>
-                                              product.requiresSize
-                                                  ? s != ProductSize.none
-                                                  : s == ProductSize.none,
-                                        )
-                                        .map((itemSize) {
-                                          final isSelected =
-                                              currentSize == itemSize;
-                                          return ChoiceChip(
-                                            label: Text(
-                                              itemSize == ProductSize.none
-                                                  ? (context.isArabic
-                                                      ? 'قطعة'
-                                                      : 'Item')
-                                                  : itemSize.name,
-                                            ),
-                                            selected: isSelected,
-                                            showCheckmark: false,
-                                            selectedColor:
-                                                isDark
-                                                    ? AppColors.accentColor
-                                                    : AppColors.primaryColor,
-                                            backgroundColor: softBg,
-                                            labelStyle: TextStyle(
-                                              color:
-                                                  isSelected
-                                                      ? AppColors.white1
-                                                      : textColor,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              side: BorderSide(
-                                                color:
-                                                    isSelected
-                                                        ? (isDark
-                                                            ? AppColors
-                                                                .accentColor
-                                                            : AppColors
-                                                                .primaryColor)
-                                                        : borderColor,
-                                              ),
-                                            ),
-                                            onSelected:
-                                                (_) => cubitProductDetails
-                                                    .selectSize(itemSize),
-                                          );
-                                        })
-                                        .toList(),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            product.stock > 0
-                                ? (context.isArabic
-                                    ? 'متاح في المخزون: ${product.stock}'
-                                    : 'In stock: ${product.stock}')
-                                : (context.isArabic
-                                    ? 'نفذت الكمية'
-                                    : 'Out of stock'),
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  product.stock > 0
-                                      ? AppColors.green
-                                      : AppColors.red,
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            context.tr('description'),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium!.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            product.description.isNotEmpty
-                                ? product.description
-                                : context.tr('default_product_desc'),
-                            style: Theme.of(context).textTheme.bodyMedium!
-                                .copyWith(color: subtextColor, height: 1.5),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            bottomNavigationBar: Container(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
-              decoration: BoxDecoration(
-                color: cardBg,
-                border: Border(top: BorderSide(color: borderColor)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                    blurRadius: 16,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Row(
-                  children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    )
+                    : Column(
                       children: [
-                        Text(
-                          context.tr('price'),
-                          style: TextStyle(
-                            color: subtextColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                        SizedBox(
+                          height: size.height * 0.32,
+                          width: double.infinity,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28.0,
+                              vertical: 12.0,
+                            ),
+                            child: heroImage,
                           ),
                         ),
-                        BlocBuilder<ProductDetailsCubit, ProductDetailsState>(
-                          bloc: cubitProductDetails,
-                          buildWhen:
-                              (previous, current) =>
-                                  current is QuantityCounterLoaded ||
-                                  current is ProductDetailsLoaded,
-                          builder: (context, qtyState) {
-                            final qty =
-                                qtyState is QuantityCounterLoaded
-                                    ? qtyState.value
-                                    : cubitProductDetails.quantity;
-                            return Text(
-                              'EGP ${(product.price * qty).toStringAsFixed(2)}',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleLarge!.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.accentColor,
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(28),
                               ),
-                            );
-                          },
+                            ),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(
+                                22,
+                                24,
+                                22,
+                                20,
+                              ),
+                              child: detailsContent,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: BlocConsumer<
-                        ProductDetailsCubit,
-                        ProductDetailsState
-                      >(
-                        bloc: cubitProductDetails,
-                        listenWhen:
-                            (previous, current) =>
-                                current is ProductAddedToCart ||
-                                current is ProductAddToCartError,
-                        listener: (context, cartState) {
-                          if (cartState is ProductAddedToCart) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(context.tr('item_added_to_cart')),
-                              ),
-                            );
-                          } else if (cartState is ProductAddToCartError) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  context.trError(cartState.message),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        buildWhen:
-                            (previous, current) =>
-                                current is ProductAddedToCart ||
-                                current is ProductAddingToCart ||
-                                current is ProductAddToCartError ||
-                                current is SizeSelected ||
-                                current is QuantityCounterLoaded,
-                        builder: (context, cartState) {
-                          if (cartState is ProductAddingToCart) {
-                            return const ElevatedButton(
-                              onPressed: null,
-                              child: SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator.adaptive(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            );
-                          }
-                          final isAdded = cartState is ProductAddedToCart;
-                          final outOfStock = product.stock <= 0;
-                          return ElevatedButton.icon(
-                            onPressed:
-                                (isAdded || outOfStock)
-                                    ? null
-                                    : () {
-                                      if (cubitProductDetails.selectedSize !=
-                                          null) {
-                                        cubitProductDetails.addToCart(
-                                          product.id,
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              context.trError(
-                                                'Please select a size first',
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
-                            icon: Icon(
-                              outOfStock
-                                  ? Icons.remove_shopping_cart_outlined
-                                  : isAdded
-                                  ? Icons.check_circle_outline
-                                  : Icons.shopping_bag_outlined,
+            bottomNavigationBar:
+                wide
+                    ? null
+                    : Container(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        border: Border(top: BorderSide(color: borderColor)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.3 : 0.05,
                             ),
-                            label: Text(
-                              outOfStock
-                                  ? (context.isArabic
-                                      ? 'نفذت الكمية'
-                                      : 'Out of stock')
-                                  : isAdded
-                                  ? context.tr('item_added_to_cart')
-                                  : context.tr('add_to_cart'),
-                            ),
-                          );
-                        },
+                            blurRadius: 16,
+                            offset: const Offset(0, -4),
+                          ),
+                        ],
                       ),
+                      child: SafeArea(top: false, child: actionBarRow),
                     ),
-                  ],
-                ),
-              ),
-            ),
           );
         } else {
           return Scaffold(

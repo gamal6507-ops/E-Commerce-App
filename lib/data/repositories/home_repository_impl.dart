@@ -28,12 +28,12 @@ class HomeRepositoryImpl implements HomeRepository {
           .collection('products')
           .where('active', isEqualTo: true)
           .orderBy(FieldPath.documentId)
-          .limit(40);
+          .limit(200);
       if (loadMore && _cursor != null) {
         query = query.startAfterDocument(_cursor!);
       }
       final page = await query.get();
-      _hasMore = page.docs.length == 40;
+      _hasMore = page.docs.length == 200;
       if (page.docs.isNotEmpty) {
         _cursor = page.docs.last;
       }

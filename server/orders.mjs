@@ -28,9 +28,7 @@ export function priceOrder(cart, products, address) {
     return {id:item.id,product:{id:product.id,name:product.name,imgUrl:product.imgUrl || '',price:product.price},quantity:item.quantity,size:product.requiresSize ? item.size : 'none'};
   });
   if (!Number.isSafeInteger(cents) || cents > 1_000_000_000) throw new StoreError('Order amount exceeds limit');
-  const demo = products.some(p => p.demo === true);
-  if (demo && products.some(p => p.demo !== true)) throw new StoreError('افصل المنتجات التجريبية عن الطلب الحقيقي. Order demo items separately.',409);
-  return {items,subtotal:cents/100,shipping:10,totalAmount:(cents+1000)/100,address:delivery,paymentMethod:demo ? 'demo' : 'cash_on_delivery',currency:'EGP',status:demo ? 'demo' : 'pending',stockUsed:Object.fromEntries(used)};
+  return {items,subtotal:cents/100,shipping:10,totalAmount:(cents+1000)/100,address:delivery,paymentMethod:'cash_on_delivery',currency:'EGP',status:'pending',stockUsed:Object.fromEntries(used)};
 }
 export function transitionOrder(current,next,admin) {
   const owner = {pending:['cancelled'],confirmed:['cancellation_requested'],delivered:['return_requested']};

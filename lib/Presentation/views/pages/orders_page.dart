@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/data/datasources/store_api.dart';
 
 class OrdersPage extends StatefulWidget {
@@ -83,7 +84,6 @@ class _OrdersPageState extends State<OrdersPage> {
   Widget build(BuildContext context) {
     final ar = context.isArabic;
     const statusesAr = {
-      'demo': 'طلب تجريبي',
       'pending': 'قيد المراجعة',
       'confirmed': 'تم التأكيد',
       'shipped': 'تم الشحن',
@@ -97,7 +97,6 @@ class _OrdersPageState extends State<OrdersPage> {
       'closed': 'مغلق',
     };
     const statusesEn = {
-      'demo': 'Demo order',
       'pending': 'Pending review',
       'confirmed': 'Confirmed',
       'shipped': 'Shipped',
@@ -171,114 +170,117 @@ class _OrdersPageState extends State<OrdersPage> {
               child: Text(ar ? 'لا توجد طلبات بعد' : 'No orders yet'),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              final status = order['status'] as String;
-              final actions =
-                  (widget.admin ? adminActions : ownerActions)[status] ??
-                  <String>[];
-              final subtotal = order['subtotal'];
-              final shipping = order['shipping'];
-              final trackingUrl = order['trackingUrl']?.toString();
-              return Card(
-                child: ExpansionTile(
-                  title: Text('#${order['id']}'),
-                  subtitle: Text(
-                    '${labelFor(status)} • EGP ${order['totalAmount']}',
-                  ),
-                  children: [
-                    ListTile(
-                      title: Text(order['shippingAddress'] ?? ''),
-                      subtitle: Text(
-                        [
-                          '${order['createdAt'] ?? ''}',
-                          if (subtotal != null && shipping != null)
-                            ar
-                                ? 'المجموع الفرعي: EGP $subtotal • الشحن: EGP $shipping'
-                                : 'Subtotal: EGP $subtotal • Shipping: EGP $shipping',
-                          order['paymentMethod'] == 'demo'
-                              ? (ar
-                                  ? 'تجريبي بدون تحصيل أو شحن'
-                                  : 'Demo — no payment or delivery')
-                              : (ar
-                                  ? 'الدفع عند الاستلام'
-                                  : 'Cash on delivery'),
-                        ].where((s) => s.isNotEmpty).join('\n'),
-                      ),
+          return ResponsiveContainer(
+            maxWidth: 960,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                final status = order['status'] as String;
+                final actions =
+                    (widget.admin ? adminActions : ownerActions)[status] ??
+                    <String>[];
+                final subtotal = order['subtotal'];
+                final shipping = order['shipping'];
+                final trackingUrl = order['trackingUrl']?.toString();
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    title: Text('#${order['id']}'),
+                    subtitle: Text(
+                      '${labelFor(status)} • EGP ${order['totalAmount']}',
                     ),
-                    for (final item in order['items'] as List)
+                    children: [
                       ListTile(
-                        title: Text('${item['product']['name']}'),
+                        title: Text(order['shippingAddress'] ?? ''),
                         subtitle: Text(
                           [
-                            '${item['quantity']} × EGP ${item['product']['price']}',
-                            if (item['size'] != null && item['size'] != 'none')
-                              '${context.tr('size_label')}: ${item['size']}',
-                          ].join(' • '),
+                            '${order['createdAt'] ?? ''}',
+                            if (subtotal != null && shipping != null)
+                              ar
+                                  ? 'المجموع الفرعي: EGP $subtotal • الشحن: EGP $shipping'
+                                  : 'Subtotal: EGP $subtotal • Shipping: EGP $shipping',
+                            ar ? 'الدفع عند الاستلام' : 'Cash on delivery',
+                          ].where((s) => s.isNotEmpty).join('\n'),
                         ),
                       ),
-                    if (trackingUrl != null && trackingUrl.isNotEmpty)
-                      ListTile(
-                        title: Text(
-                          ar ? 'رابط تتبع الشحنة' : 'Shipment tracking',
-                        ),
-                        subtitle: SelectableText(trackingUrl),
-                        trailing:
-                            trackingUrl.startsWith('https://')
-                                ? IconButton(
-                                  tooltip: ar ? 'فتح الرابط' : 'Open link',
-                                  icon: const Icon(Icons.open_in_new),
-                                  onPressed:
-                                      () => launchUrl(
-                                        Uri.parse(trackingUrl),
-                                        mode: LaunchMode.externalApplication,
-                                      ),
-                                )
-                                : null,
-                      ),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (final next in actions)
-                          TextButton(
-                            onPressed: () async {
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder:
-                                    (c) => AlertDialog(
-                                      title: Text(
-                                        ar
-                                            ? 'تأكيد تغيير حالة الطلب؟'
-                                            : 'Confirm order action?',
-                                      ),
-                                      content: Text(labelFor(next)),
-                                      actions: [
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(c, false),
-                                          child: Text(ar ? 'رجوع' : 'Back'),
-                                        ),
-                                        TextButton(
-                                          onPressed:
-                                              () => Navigator.pop(c, true),
-                                          child: Text(ar ? 'تأكيد' : 'Confirm'),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                              if (confirmed == true) await _change(order, next);
-                            },
-                            child: Text(labelFor(next)),
+                      for (final item in order['items'] as List)
+                        ListTile(
+                          title: Text('${item['product']['name']}'),
+                          subtitle: Text(
+                            [
+                              '${item['quantity']} × EGP ${item['product']['price']}',
+                              if (item['size'] != null &&
+                                  item['size'] != 'none')
+                                '${context.tr('size_label')}: ${item['size']}',
+                            ].join(' • '),
                           ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
+                        ),
+                      if (trackingUrl != null && trackingUrl.isNotEmpty)
+                        ListTile(
+                          title: Text(
+                            ar ? 'رابط تتبع الشحنة' : 'Shipment tracking',
+                          ),
+                          subtitle: SelectableText(trackingUrl),
+                          trailing:
+                              trackingUrl.startsWith('https://')
+                                  ? IconButton(
+                                    tooltip: ar ? 'فتح الرابط' : 'Open link',
+                                    icon: const Icon(Icons.open_in_new),
+                                    onPressed:
+                                        () => launchUrl(
+                                          Uri.parse(trackingUrl),
+                                          mode: LaunchMode.externalApplication,
+                                        ),
+                                  )
+                                  : null,
+                        ),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final next in actions)
+                            TextButton(
+                              onPressed: () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder:
+                                      (c) => AlertDialog(
+                                        title: Text(
+                                          ar
+                                              ? 'تأكيد تغيير حالة الطلب؟'
+                                              : 'Confirm order action?',
+                                        ),
+                                        content: Text(labelFor(next)),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(c, false),
+                                            child: Text(ar ? 'رجوع' : 'Back'),
+                                          ),
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.pop(c, true),
+                                            child: Text(
+                                              ar ? 'تأكيد' : 'Confirm',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                                if (confirmed == true) {
+                                  await _change(order, next);
+                                }
+                              },
+                              child: Text(labelFor(next)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

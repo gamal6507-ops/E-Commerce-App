@@ -7,8 +7,14 @@ let env;
 const profile={id:'alice',username:'Alice',email:'alice@example.com',createdAt:'2026-11-19T00:00:00Z',providerId:'password',photoUrl:''};
 before(async()=>{if(enabled) env=await initializeTestEnvironment({projectId:'demo-verve-store',firestore:{rules:await readFile('firestore.rules','utf8')}});});
 after(async()=>{if(env) await env.cleanup();});
-test('rules deny unauthenticated reads and cross-user access',{skip:!enabled},async()=>{
- await env.withSecurityRulesDisabled(async c=>setDoc(doc(c.firestore(),'users/alice'),profile));
+test('rules allow public read of active catalog only and deny hidden products and cross-user access',{skip:!enabled},async()=>{
+ await env.withSecurityRulesDisabled(async c=>{
+  await setDoc(doc(c.firestore(),'users/alice'),profile);
+  await setDoc(doc(c.firestore(),'products/public_item'),{id:'public_item',name:'Shirt',price:20,stock:5,active:true});
+  await setDoc(doc(c.firestore(),'products/hidden_item'),{id:'hidden_item',name:'Hidden',price:20,stock:5,active:false});
+ });
+ await assertSucceeds(getDoc(doc(env.unauthenticatedContext().firestore(),'products/public_item')));
+ await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),'products/hidden_item')));
  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(),'users/alice')));
  await assertFails(getDoc(doc(env.authenticatedContext('bob',{email:'bob@example.com'}).firestore(),'users/alice')));
  await assertSucceeds(getDoc(doc(env.authenticatedContext('alice',{email:'alice@example.com'}).firestore(),'users/alice')));

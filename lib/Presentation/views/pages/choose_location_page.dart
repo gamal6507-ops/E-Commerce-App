@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/domain/entities/location.dart';
 import 'package:e_commerce_app/Presentation/controller/choose_location_cubit/choose_location_cubit.dart';
 
@@ -124,169 +125,177 @@ class _ChooseLocationPageState extends State<ChooseLocationPage> {
           }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_editingId != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          ar ? 'تعديل العنوان المحدد' : 'Editing saved address',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        TextButton(
-                          onPressed: _clearForm,
-                          child: Text(ar ? 'إلغاء التعديل' : 'Cancel edit'),
-                        ),
-                      ],
-                    ),
-                  ),
-                Form(
-                  key: _form,
-                  child: Column(
-                    children: [
-                      for (final entry in _fields.entries)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: TextFormField(
-                            controller: entry.value,
-                            maxLength: 150,
-                            keyboardType:
-                                entry.key == 'phone'
-                                    ? TextInputType.phone
-                                    : TextInputType.text,
-                            decoration: InputDecoration(
-                              labelText:
-                                  ar
-                                      ? labelsAr[entry.key]
-                                      : labelsEn[entry.key],
-                            ),
-                            validator: (value) {
-                              if (['unit', 'postalCode'].contains(entry.key)) {
-                                return null;
-                              }
-                              if (value == null || value.trim().isEmpty) {
-                                return ar ? 'هذا الحقل مطلوب' : 'Required';
-                              }
-                              if (entry.key == 'phone' &&
-                                  !RegExp(
-                                    r'^\+?[0-9 ()-]{7,25}$',
-                                  ).hasMatch(value.trim())) {
-                                return ar
-                                    ? 'رقم هاتف غير صحيح'
-                                    : 'Invalid phone number';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed:
-                      state is AddingLocation
-                          ? null
-                          : () async {
-                            if (!_form.currentState!.validate()) return;
-                            String value(String key) =>
-                                _fields[key]!.text.trim();
-                            final existing = _locations.where(
-                              (loc) => loc.id == _editingId,
-                            );
-                            await cubit.addLocation(
-                              Location(
-                                id:
-                                    _editingId ??
-                                    DateTime.now().microsecondsSinceEpoch
-                                        .toString(),
-                                isChosen:
-                                    existing.isNotEmpty
-                                        ? existing.first.isChosen
-                                        : false,
-                                recipient: value('recipient'),
-                                phone: value('phone'),
-                                street: value('street'),
-                                building: value('building'),
-                                unit: value('unit'),
-                                city: value('city'),
-                                country: value('country'),
-                                postalCode: value('postalCode'),
-                              ),
-                            );
-                          },
-                  child: Text(
-                    _editingId != null
-                        ? (ar ? 'تحديث العنوان' : 'Update address')
-                        : (ar ? 'حفظ العنوان' : 'Save address'),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                for (final address in _locations)
-                  Card(
-                    child: ListTile(
-                      title: Text(
-                        '${address.recipient.isNotEmpty ? address.recipient : (ar ? 'عنوان قديم غير مكتمل' : 'Incomplete address')} — ${address.city}, ${address.country}',
-                      ),
-                      subtitle: Text(
-                        _isCompleteAddress(address)
-                            ? '${address.street} ${address.building} ${address.unit}\n${address.phone}'
-                            : (ar
-                                ? 'بيانات العنوان غير مكتملة — اضغط تعديل لإكمالها قبل الطلب'
-                                : 'Incomplete details — tap edit to complete before checkout'),
-                      ),
-                      leading: Icon(
-                        cubit.selectedLocationId == address.id
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_off,
-                      ),
-                      onTap: () => cubit.selectLocation(address.id),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
+            child: ResponsiveContainer(
+              maxWidth: 920,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_editingId != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            tooltip: ar ? 'تعديل' : 'Edit',
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => _startEditing(address),
+                          Text(
+                            ar
+                                ? 'تعديل العنوان المحدد'
+                                : 'Editing saved address',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
-                          IconButton(
-                            tooltip: ar ? 'حذف' : 'Delete',
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => cubit.deleteLocation(address.id),
+                          TextButton(
+                            onPressed: _clearForm,
+                            child: Text(ar ? 'إلغاء التعديل' : 'Cancel edit'),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed:
-                      state is ConfirmAddressLoading
-                          ? null
-                          : () {
-                            final selected = cubit.selectedLocation;
-                            if (selected != null &&
-                                !_isCompleteAddress(selected)) {
-                              _startEditing(selected);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
+                  Form(
+                    key: _form,
+                    child: Column(
+                      children: [
+                        for (final entry in _fields.entries)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: TextFormField(
+                              controller: entry.value,
+                              maxLength: 150,
+                              keyboardType:
+                                  entry.key == 'phone'
+                                      ? TextInputType.phone
+                                      : TextInputType.text,
+                              decoration: InputDecoration(
+                                labelText:
                                     ar
-                                        ? 'يرجى استكمال بيانات المستلم ورقم الهاتف والشارع والعمارة أولاً'
-                                        : 'Please complete recipient, phone, street and building first',
-                                  ),
+                                        ? labelsAr[entry.key]
+                                        : labelsEn[entry.key],
+                              ),
+                              validator: (value) {
+                                if ([
+                                  'unit',
+                                  'postalCode',
+                                ].contains(entry.key)) {
+                                  return null;
+                                }
+                                if (value == null || value.trim().isEmpty) {
+                                  return ar ? 'هذا الحقل مطلوب' : 'Required';
+                                }
+                                if (entry.key == 'phone' &&
+                                    !RegExp(
+                                      r'^\+?[0-9 ()-]{7,25}$',
+                                    ).hasMatch(value.trim())) {
+                                  return ar
+                                      ? 'رقم هاتف غير صحيح'
+                                      : 'Invalid phone number';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed:
+                        state is AddingLocation
+                            ? null
+                            : () async {
+                              if (!_form.currentState!.validate()) return;
+                              String value(String key) =>
+                                  _fields[key]!.text.trim();
+                              final existing = _locations.where(
+                                (loc) => loc.id == _editingId,
+                              );
+                              await cubit.addLocation(
+                                Location(
+                                  id:
+                                      _editingId ??
+                                      DateTime.now().microsecondsSinceEpoch
+                                          .toString(),
+                                  isChosen:
+                                      existing.isNotEmpty
+                                          ? existing.first.isChosen
+                                          : false,
+                                  recipient: value('recipient'),
+                                  phone: value('phone'),
+                                  street: value('street'),
+                                  building: value('building'),
+                                  unit: value('unit'),
+                                  city: value('city'),
+                                  country: value('country'),
+                                  postalCode: value('postalCode'),
                                 ),
                               );
-                              return;
-                            }
-                            cubit.confirmAddress();
-                          },
-                  child: Text(ar ? 'تأكيد العنوان' : 'Confirm address'),
-                ),
-              ],
+                            },
+                    child: Text(
+                      _editingId != null
+                          ? (ar ? 'تحديث العنوان' : 'Update address')
+                          : (ar ? 'حفظ العنوان' : 'Save address'),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  for (final address in _locations)
+                    Card(
+                      child: ListTile(
+                        title: Text(
+                          '${address.recipient.isNotEmpty ? address.recipient : (ar ? 'عنوان قديم غير مكتمل' : 'Incomplete address')} — ${address.city}, ${address.country}',
+                        ),
+                        subtitle: Text(
+                          _isCompleteAddress(address)
+                              ? '${address.street} ${address.building} ${address.unit}\n${address.phone}'
+                              : (ar
+                                  ? 'بيانات العنوان غير مكتملة — اضغط تعديل لإكمالها قبل الطلب'
+                                  : 'Incomplete details — tap edit to complete before checkout'),
+                        ),
+                        leading: Icon(
+                          cubit.selectedLocationId == address.id
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                        ),
+                        onTap: () => cubit.selectLocation(address.id),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: ar ? 'تعديل' : 'Edit',
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () => _startEditing(address),
+                            ),
+                            IconButton(
+                              tooltip: ar ? 'حذف' : 'Delete',
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () => cubit.deleteLocation(address.id),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed:
+                        state is ConfirmAddressLoading
+                            ? null
+                            : () {
+                              final selected = cubit.selectedLocation;
+                              if (selected != null &&
+                                  !_isCompleteAddress(selected)) {
+                                _startEditing(selected);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      ar
+                                          ? 'يرجى استكمال بيانات المستلم ورقم الهاتف والشارع والعمارة أولاً'
+                                          : 'Please complete recipient, phone, street and building first',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              cubit.confirmAddress();
+                            },
+                    child: Text(ar ? 'تأكيد العنوان' : 'Confirm address'),
+                  ),
+                ],
+              ),
             ),
           );
         },

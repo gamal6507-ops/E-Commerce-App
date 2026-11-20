@@ -2,6 +2,7 @@ import 'package:e_commerce_app/Presentation/controller/porfile_cubit/cubit/profi
 import 'package:e_commerce_app/Presentation/views/widgets/profile_body_widget.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/domain/entities/app_user.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,21 +11,24 @@ class EditProfile extends StatelessWidget {
   const EditProfile({super.key});
 
   Widget _buildBody(AppUser user, ProfileCubit cubit, Size size) {
-    return ProfileBody(
-      username: user.username,
-      email: user.email,
-      photoUrl: user.photoUrl,
-      size: size,
-      onEditUserNameProfile: (newUsername) {
-        cubit.updateUserName(name: newUsername);
-      },
-      onEditEmailProfile: (newEmail) {
-        cubit.updateEmail(newEmail: newEmail);
-      },
-      onEditPhoto: (url) {
-        cubit.updateProfilePhoto(photoUrl: url);
-      },
-      providerId: user.providerId,
+    return ResponsiveContainer(
+      maxWidth: 920,
+      child: ProfileBody(
+        username: user.username,
+        email: user.email,
+        photoUrl: user.photoUrl,
+        size: size,
+        onEditUserNameProfile: (newUsername) {
+          cubit.updateUserName(name: newUsername);
+        },
+        onEditEmailProfile: (newEmail) {
+          cubit.updateEmail(newEmail: newEmail);
+        },
+        onEditPhoto: (url) {
+          cubit.updateProfilePhoto(photoUrl: url);
+        },
+        providerId: user.providerId,
+      ),
     );
   }
 

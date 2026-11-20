@@ -5,8 +5,8 @@
     "display": "standalone",
     "background_color": "#11141C",
     "theme_color": "#11141C",
-    "description": "Verve Store — products, delivery and order management.",
-    "orientation": "portrait-primary",
+    "description": "Verve Store — Fashion, Market & Everyday Essentials.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

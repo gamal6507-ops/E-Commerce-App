@@ -85,7 +85,7 @@ service cloud.firestore {
       match /paymentCards/{id} { allow read,write: if false; }
     }
     match /products/{id} {
-      allow read: if signedIn() && (resource.data.active == true || admin());
+      allow read: if resource.data.active == true || admin();
       allow write: if false;
     }
     match /{document=**} { allow read,write: if false; }

@@ -10,6 +10,7 @@ import 'package:e_commerce_app/Presentation/views/widgets/payment_method_item.da
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/domain/entities/location.dart';
 import 'package:e_commerce_app/domain/entities/payment_card.dart';
 import 'package:material_ui/material_ui.dart';
@@ -49,8 +50,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     SnackBar(
                       content: Text(
                         context.isArabic
-                            ? 'الدفع الإلكتروني غير مفعّل بعد'
-                            : 'Electronic payments are not configured yet',
+                            ? 'الدفع الإلكتروني سيكون متاحًا قريبًا، المتاح حاليًا الدفع عند الاستلام'
+                            : 'Electronic cards are coming soon — Cash on Delivery is available',
                       ),
                     ),
                   ),
@@ -345,303 +346,323 @@ class _CheckoutPageState extends State<CheckoutPage> {
             return const Center(child: CircularProgressIndicator.adaptive());
           } else if (state is CheckoutLoaded) {
             final cartItems = state.cartItems;
-            return SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CheckoutHeadlinesItem(
-                      title: context.tr('shipping_address'),
-                      onTap: () {
-                        Navigator.of(context)
-                            .pushNamed(AppRoute.chooseLocation)
-                            .then(
-                              (_) async => await cubit.getCheckoutContent(),
-                            );
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildShippingItem(state.chosenAddress, context),
-                    const SizedBox(height: 22),
-                    CheckoutHeadlinesItem(
-                      title: context.tr('order_items'),
-                      numOfProducts: state.numOfProducts,
-                    ),
-                    const SizedBox(height: 10),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: cartItems.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final cartItem = cartItems[index];
-                        return Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: cardBg,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: borderColor),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                height: 76,
-                                width: 76,
-                                decoration: BoxDecoration(
-                                  color: softBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    imageUrl: cartItem.product.imgUrl,
-                                    fit: BoxFit.contain,
-                                    errorWidget:
-                                        (_, __, ___) => const Icon(
-                                          Icons.image_not_supported_outlined,
-                                          color: AppColors.grey1,
-                                        ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      cartItem.product.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleSmall!.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: textColor,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      [
-                                        if (cartItem.size != ProductSize.none)
-                                          '${context.tr('size_label')}: ${cartItem.size.name}',
-                                        '${context.tr('qty')}: ${cartItem.quantity}',
-                                      ].join('  •  '),
-                                      style: TextStyle(
-                                        color: subtextColor,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'EGP ${cartItem.totalPrice.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: AppColors.accentColor,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 22),
-                    CheckoutHeadlinesItem(
-                      title: context.tr('payment_methods'),
-                      onTap:
-                          _isCashOnDelivery
-                              ? null
-                              : () {
-                                Navigator.of(context)
-                                    .pushNamed(AppRoute.paymentMethodsRoute)
-                                    .then(
-                                      (_) async =>
-                                          await cubit.getCheckoutContent(),
-                                    );
-                              },
-                    ),
-                    const SizedBox(height: 10),
-                    if (state.demo)
-                      Text(
-                        context.isArabic
-                            ? 'طلب تجريبي بدون تحصيل أو توصيل'
-                            : 'Demo order — no payment or delivery',
-                      )
-                    else
-                      _buildPaymentTypeSelector(context),
-                    const SizedBox(height: 12),
-                    if (!state.demo)
-                      _isCashOnDelivery
-                          ? _buildCashOnDeliveryCard(context)
-                          : _buildPaymentMethodItem(
-                            state.chosenPaymentCard,
-                            context,
-                          ),
-                    const SizedBox(height: 22),
-                    Container(
-                      padding: const EdgeInsets.all(16),
+            final detailsColumn = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CheckoutHeadlinesItem(
+                  title: context.tr('shipping_address'),
+                  onTap: () {
+                    Navigator.of(context)
+                        .pushNamed(AppRoute.chooseLocation)
+                        .then((_) async => await cubit.getCheckoutContent());
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildShippingItem(state.chosenAddress, context),
+                const SizedBox(height: 22),
+                CheckoutHeadlinesItem(
+                  title: context.tr('order_items'),
+                  numOfProducts: state.numOfProducts,
+                ),
+                const SizedBox(height: 10),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: cartItems.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final cartItem = cartItems[index];
+                    return Container(
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: cardBg,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: borderColor),
                       ),
-                      child: Column(
+                      child: Row(
                         children: [
-                          LabelWithValueRow(
-                            label: context.tr('subtotal'),
-                            value: 'EGP ${state.subtotal.toStringAsFixed(2)}',
-                          ),
-                          const SizedBox(height: 8),
-                          LabelWithValueRow(
-                            label: context.tr('shipping'),
-                            value:
-                                'EGP ${state.shippingValue.toStringAsFixed(2)}',
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Divider(color: borderColor),
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                context.tr('total_amount'),
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleMedium!.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: textColor,
-                                ),
+                          Container(
+                            height: 76,
+                            width: 76,
+                            decoration: BoxDecoration(
+                              color: softBg,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: cartItem.product.imgUrl,
+                                fit: BoxFit.contain,
+                                errorWidget:
+                                    (_, __, ___) => const Icon(
+                                      Icons.image_not_supported_outlined,
+                                      color: AppColors.grey1,
+                                    ),
                               ),
-                              Text(
-                                'EGP ${state.totalAmount.toStringAsFixed(2)}',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.titleLarge!.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.accentColor,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  cartItem.product.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleSmall!.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                  ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  [
+                                    if (cartItem.size != ProductSize.none)
+                                      '${context.tr('size_label')}: ${cartItem.size.name}',
+                                    '${context.tr('qty')}: ${cartItem.quantity}',
+                                  ].join('  •  '),
+                                  style: TextStyle(
+                                    color: subtextColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'EGP ${cartItem.totalPrice.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: AppColors.accentColor,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    BlocConsumer<CheckoutCubit, CheckoutState>(
-                      bloc: cubit,
-                      listenWhen:
-                          (previous, current) =>
-                              current is CheckoutOrderPlaced ||
-                              current is CheckoutOrderError,
-                      listener: (context, orderState) {
-                        if (orderState is CheckoutOrderPlaced) {
-                          showDialog<void>(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (dialogContext) {
-                              return AlertDialog(
-                                icon: const Icon(
-                                  Icons.check_circle_rounded,
-                                  color: AppColors.green,
-                                  size: 48,
-                                ),
-                                title: Text(context.tr('order_placed_title')),
-                                content: Text(
-                                  state.demo
-                                      ? (context.isArabic
-                                          ? 'تم حفظ الطلب التجريبي بدون دفع أو شحن.'
-                                          : 'Demo order saved. No payment or delivery.')
-                                      : context.tr('order_placed_sub'),
-                                  textAlign: TextAlign.center,
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(dialogContext).pop();
-                                      Navigator.of(
-                                        context,
-                                        rootNavigator: true,
-                                      ).pushNamedAndRemoveUntil(
-                                        AppRoute.ordersRoute,
-                                        (route) =>
-                                            route.settings.name ==
-                                            AppRoute.homeRoute,
-                                      );
-                                    },
-                                    child: Text(context.tr('my_orders')),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Navigator.of(dialogContext).pop();
-                                      Navigator.of(
-                                        context,
-                                        rootNavigator: true,
-                                      ).pushNamedAndRemoveUntil(
-                                        AppRoute.homeRoute,
-                                        (route) => false,
-                                      );
-                                    },
-                                    child: Text(context.tr('back_to_home')),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        } else if (orderState is CheckoutOrderError) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                context.trError(orderState.message),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      buildWhen:
-                          (previous, current) =>
-                              current is CheckoutPlacingOrder ||
-                              current is CheckoutLoaded ||
-                              current is CheckoutOrderError ||
-                              current is CheckoutOrderPlaced,
-                      builder: (context, orderState) {
-                        final isPlacing = orderState is CheckoutPlacingOrder;
-                        return ElevatedButton(
-                          onPressed:
-                              isPlacing
-                                  ? null
-                                  : () => cubit.placeOrder(
-                                    isCashOnDelivery: _isCashOnDelivery,
-                                  ),
-                          child:
-                              isPlacing
-                                  ? const SizedBox(
-                                    height: 22,
-                                    width: 22,
-                                    child: CircularProgressIndicator.adaptive(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : Text(
-                                    state.demo
-                                        ? (context.isArabic
-                                            ? 'تأكيد الطلب التجريبي'
-                                            : 'Confirm demo order')
-                                        : _isCashOnDelivery
-                                        ? context.tr('confirm_order_cod')
-                                        : context.tr('place_order'),
-                                  ),
-                        );
-                      },
-                    ),
-                  ],
+                    );
+                  },
                 ),
+                const SizedBox(height: 22),
+                CheckoutHeadlinesItem(
+                  title: context.tr('payment_methods'),
+                  onTap:
+                      _isCashOnDelivery
+                          ? null
+                          : () {
+                            Navigator.of(context)
+                                .pushNamed(AppRoute.paymentMethodsRoute)
+                                .then(
+                                  (_) async => await cubit.getCheckoutContent(),
+                                );
+                          },
+                ),
+                const SizedBox(height: 10),
+                _buildPaymentTypeSelector(context),
+                const SizedBox(height: 12),
+                _isCashOnDelivery
+                    ? _buildCashOnDeliveryCard(context)
+                    : _buildPaymentMethodItem(state.chosenPaymentCard, context),
+              ],
+            );
+
+            final summaryColumn = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.tr('order_summary'),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium!.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      LabelWithValueRow(
+                        label: context.tr('subtotal'),
+                        value: 'EGP ${state.subtotal.toStringAsFixed(2)}',
+                      ),
+                      const SizedBox(height: 8),
+                      LabelWithValueRow(
+                        label: context.tr('shipping'),
+                        value: 'EGP ${state.shippingValue.toStringAsFixed(2)}',
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Divider(color: borderColor),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            context.tr('total_amount'),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium!.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                            ),
+                          ),
+                          Text(
+                            'EGP ${state.totalAmount.toStringAsFixed(2)}',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleLarge!.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                BlocConsumer<CheckoutCubit, CheckoutState>(
+                  bloc: cubit,
+                  listenWhen:
+                      (previous, current) =>
+                          current is CheckoutOrderPlaced ||
+                          current is CheckoutOrderError,
+                  listener: (context, orderState) {
+                    if (orderState is CheckoutOrderPlaced) {
+                      showDialog<void>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (dialogContext) {
+                          return AlertDialog(
+                            icon: const Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.green,
+                              size: 48,
+                            ),
+                            title: Text(context.tr('order_placed_title')),
+                            content: Text(
+                              context.tr('order_placed_sub'),
+                              textAlign: TextAlign.center,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop();
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pushNamedAndRemoveUntil(
+                                    AppRoute.ordersRoute,
+                                    (route) =>
+                                        route.settings.name ==
+                                        AppRoute.homeRoute,
+                                  );
+                                },
+                                child: Text(context.tr('my_orders')),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.of(dialogContext).pop();
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).pushNamedAndRemoveUntil(
+                                    AppRoute.homeRoute,
+                                    (route) => false,
+                                  );
+                                },
+                                child: Text(context.tr('back_to_home')),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    } else if (orderState is CheckoutOrderError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(context.trError(orderState.message)),
+                        ),
+                      );
+                    }
+                  },
+                  buildWhen:
+                      (previous, current) =>
+                          current is CheckoutPlacingOrder ||
+                          current is CheckoutLoaded ||
+                          current is CheckoutOrderError ||
+                          current is CheckoutOrderPlaced,
+                  builder: (context, orderState) {
+                    final isPlacing = orderState is CheckoutPlacingOrder;
+                    return ElevatedButton(
+                      onPressed:
+                          isPlacing
+                              ? null
+                              : () => cubit.placeOrder(
+                                isCashOnDelivery: _isCashOnDelivery,
+                              ),
+                      child:
+                          isPlacing
+                              ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator.adaptive(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text(
+                                _isCashOnDelivery
+                                    ? context.tr('confirm_order_cod')
+                                    : context.tr('place_order'),
+                              ),
+                    );
+                  },
+                ),
+              ],
+            );
+
+            return SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = ResponsiveLayout.useDesktopNav(
+                    constraints.maxWidth,
+                  );
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                    child: ResponsiveContainer(
+                      maxWidth: 1160,
+                      child:
+                          wide
+                              ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(flex: 7, child: detailsColumn),
+                                  const SizedBox(width: 28),
+                                  Expanded(flex: 4, child: summaryColumn),
+                                ],
+                              )
+                              : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  detailsColumn,
+                                  const SizedBox(height: 22),
+                                  summaryColumn,
+                                ],
+                              ),
+                    ),
+                  );
+                },
               ),
             );
           } else if (state is CheckoutError) {

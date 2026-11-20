@@ -1,4 +1,6 @@
 import 'package:e_commerce_app/data/datasources/catalog_search.dart';
+import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_cubit.dart';
+import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_state.dart';
 import 'package:e_commerce_app/Presentation/controller/home_cubit/home_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/porfile_cubit/cubit/profile_cubit.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/category_tab_view.dart';
@@ -8,9 +10,11 @@ import 'package:e_commerce_app/Presentation/views/widgets/user_avatar.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
 import 'package:e_commerce_app/core/utils/app_colors.dart';
 import 'package:e_commerce_app/core/utils/app_route.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/domain/entities/category.dart';
 import 'package:e_commerce_app/domain/entities/product.dart';
 import 'package:e_commerce_app/services/notification_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,6 +27,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final TabController _tabController;
+  StoreDepartment _selectedDepartment = StoreDepartment.all;
   String? _selectedCategory;
 
   @override
@@ -73,139 +78,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         builder: (context) {
           return Scaffold(
             body: SafeArea(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
-                    child: BlocBuilder<ProfileCubit, ProfileState>(
-                      builder: (context, state) {
-                        String username = 'Shopper';
-                        String photoUrl = '';
-                        if (state is ProfileLoaded) {
-                          username = state.user.username;
-                          photoUrl = state.user.photoUrl;
-                        } else if (state is ProfileUpdatedSuccess) {
-                          username = state.user.username;
-                          photoUrl = state.user.photoUrl;
-                        }
-                        return Row(
-                          children: [
-                            UserAvatar(
-                              username: username,
-                              photoUrl: photoUrl,
-                              radius: 22,
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                  rootNavigator: true,
-                                ).pushNamed(AppRoute.editProfileRoute);
-                              },
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.isArabic
-                                        ? 'مرحباً، $username'
-                                        : 'Hello, $username',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium!.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    context.isArabic
-                                        ? 'مختارات حصرية وكتالوج مباشر'
-                                        : 'Curated picks & live catalog',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall!.copyWith(
-                                      color:
-                                          isDark
-                                              ? AppColors.textSecondaryDark
-                                              : AppColors.grey1,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            ValueListenableBuilder<List<InAppNotification>>(
-                              valueListenable:
-                                  NotificationService
-                                      .instance
-                                      .notificationsNotifier,
-                              builder: (context, notifications, _) {
-                                final unreadCount =
-                                    notifications
-                                        .where((n) => !n.isRead)
-                                        .length;
-                                return Stack(
-                                  children: [
-                                    IconButton(
-                                      style: IconButton.styleFrom(
-                                        backgroundColor: cardBg,
-                                        side: BorderSide(color: borderColor),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                      ),
-                                      icon: Icon(
-                                        Icons.notifications_none_rounded,
-                                        color: textColor,
-                                      ),
-                                      onPressed:
-                                          () => showNotificationsSheet(context),
-                                    ),
-                                    if (unreadCount > 0)
-                                      Positioned(
-                                        top: 6,
-                                        right: 6,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: AppColors.accentColor,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            minWidth: 16,
-                                            minHeight: 16,
-                                          ),
-                                          child: Text(
-                                            unreadCount > 9
-                                                ? '9+'
-                                                : '$unreadCount',
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              color: AppColors.white1,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: InkWell(
+              child: ResponsiveContainer(
+                maxWidth: 1280,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final desktop = ResponsiveLayout.useDesktopNav(
+                      constraints.maxWidth,
+                    );
+                    final isSignedIn =
+                        FirebaseAuth.instance.currentUser != null;
+
+                    final searchBar = InkWell(
                       borderRadius: BorderRadius.circular(14),
                       onTap: () {
                         final homeState = context.read<HomeCubit>().state;
@@ -262,92 +145,360 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Container(
-                      height: 46,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: softBg,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: borderColor),
-                      ),
-                      child: TabBar(
-                        controller: _tabController,
-                        dividerColor: Colors.transparent,
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        indicator: BoxDecoration(
-                          color: cardBg,
-                          borderRadius: BorderRadius.circular(9),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(
-                                alpha: isDark ? 0.2 : 0.04,
+                    );
+
+                    final notificationBell = ValueListenableBuilder<
+                      List<InAppNotification>
+                    >(
+                      valueListenable:
+                          NotificationService.instance.notificationsNotifier,
+                      builder: (context, notifications, _) {
+                        final unreadCount =
+                            notifications.where((n) => !n.isRead).length;
+                        return Stack(
+                          children: [
+                            IconButton(
+                              style: IconButton.styleFrom(
+                                backgroundColor: cardBg,
+                                side: BorderSide(color: borderColor),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
+                              icon: Icon(
+                                Icons.notifications_none_rounded,
+                                color: textColor,
+                              ),
+                              onPressed: () => showNotificationsSheet(context),
                             ),
+                            if (unreadCount > 0)
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.accentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Text(
+                                    unreadCount > 9 ? '9+' : '$unreadCount',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: AppColors.white1,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
-                        ),
-                        labelColor: textColor,
-                        unselectedLabelColor:
-                            isDark
-                                ? AppColors.textSecondaryDark
-                                : AppColors.grey1,
-                        labelStyle: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                        tabs: [
-                          Tab(text: context.tr('nav_discover')),
-                          Tab(text: context.tr('categories')),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          HomeTabView(
-                            selectedCategory: _selectedCategory,
-                            onCategorySelected: (category) {
-                              setState(() {
-                                _selectedCategory = category;
-                              });
-                            },
-                            onShowAll: () {
-                              if (_selectedCategory != null) {
-                                setState(() {
-                                  _selectedCategory = null;
-                                });
-                              } else {
-                                context.read<HomeCubit>().getHomeData();
-                              }
-                            },
+                        );
+                      },
+                    );
+
+                    return Column(
+                      children: [
+                        if (!desktop)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
+                            ),
+                            child: BlocBuilder<ProfileCubit, ProfileState>(
+                              builder: (context, state) {
+                                String username =
+                                    context.isArabic ? 'زائر' : 'Guest';
+                                String photoUrl = '';
+                                if (state is ProfileLoaded) {
+                                  username = state.user.username;
+                                  photoUrl = state.user.photoUrl;
+                                } else if (state is ProfileUpdatedSuccess) {
+                                  username = state.user.username;
+                                  photoUrl = state.user.photoUrl;
+                                }
+                                return Row(
+                                  children: [
+                                    UserAvatar(
+                                      username: username,
+                                      photoUrl: photoUrl,
+                                      radius: 22,
+                                      onTap: () {
+                                        Navigator.of(
+                                          context,
+                                          rootNavigator: true,
+                                        ).pushNamed(
+                                          isSignedIn
+                                              ? AppRoute.editProfileRoute
+                                              : AppRoute.loginRoute,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isSignedIn
+                                                ? (context.isArabic
+                                                    ? 'مرحباً، $username'
+                                                    : 'Hello, $username')
+                                                : (context.isArabic
+                                                    ? 'متجر Verve'
+                                                    : 'Verve Store'),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.titleMedium!.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: textColor,
+                                            ),
+                                          ),
+                                          Text(
+                                            context.isArabic
+                                                ? 'أزياء وماركت متكامل'
+                                                : 'Fashion & Market Store',
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall!.copyWith(
+                                              color:
+                                                  isDark
+                                                      ? AppColors
+                                                          .textSecondaryDark
+                                                      : AppColors.grey1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (!isSignedIn) ...[
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.of(
+                                              context,
+                                              rootNavigator: true,
+                                            ).pushNamed(AppRoute.loginRoute),
+                                        child: Text(context.tr('sign_in')),
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    BlocBuilder<
+                                      AppPreferencesCubit,
+                                      AppPreferencesState
+                                    >(
+                                      builder:
+                                          (context, prefState) => IconButton(
+                                            tooltip: context.tr(
+                                              'settings_language',
+                                            ),
+                                            icon: Text(
+                                              prefState.locale.languageCode ==
+                                                      'ar'
+                                                  ? 'EN'
+                                                  : 'ع',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                color: textColor,
+                                              ),
+                                            ),
+                                            onPressed:
+                                                () => context
+                                                    .read<AppPreferencesCubit>()
+                                                    .setLocale(
+                                                      Locale(
+                                                        prefState
+                                                                    .locale
+                                                                    .languageCode ==
+                                                                'ar'
+                                                            ? 'en'
+                                                            : 'ar',
+                                                      ),
+                                                    ),
+                                          ),
+                                    ),
+                                    notificationBell,
+                                  ],
+                                );
+                              },
+                            ),
                           ),
-                          CategoryTabView(
-                            onCategoryTap: (categoryName) {
-                              setState(() {
-                                _selectedCategory =
-                                    categoryName == 'All Products'
-                                        ? null
-                                        : categoryName;
-                              });
-                              _tabController.animateTo(0);
-                            },
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            16,
+                            desktop ? 16 : 0,
+                            16,
+                            0,
+                          ),
+                          child:
+                              desktop
+                                  ? Row(
+                                    children: [
+                                      Expanded(flex: 6, child: searchBar),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        flex: 3,
+                                        child: Container(
+                                          height: 46,
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: softBg,
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: borderColor,
+                                            ),
+                                          ),
+                                          child: TabBar(
+                                            controller: _tabController,
+                                            dividerColor: Colors.transparent,
+                                            indicatorSize:
+                                                TabBarIndicatorSize.tab,
+                                            indicator: BoxDecoration(
+                                              color: cardBg,
+                                              borderRadius:
+                                                  BorderRadius.circular(9),
+                                            ),
+                                            labelColor: textColor,
+                                            unselectedLabelColor:
+                                                isDark
+                                                    ? AppColors
+                                                        .textSecondaryDark
+                                                    : AppColors.grey1,
+                                            labelStyle: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13.5,
+                                            ),
+                                            tabs: [
+                                              Tab(
+                                                text: context.tr(
+                                                  'nav_discover',
+                                                ),
+                                              ),
+                                              Tab(
+                                                text: context.tr('categories'),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      notificationBell,
+                                    ],
+                                  )
+                                  : searchBar,
+                        ),
+                        if (!desktop) ...[
+                          const SizedBox(height: 14),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: Container(
+                              height: 46,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: softBg,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: TabBar(
+                                controller: _tabController,
+                                dividerColor: Colors.transparent,
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                indicator: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(9),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: isDark ? 0.2 : 0.04,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                labelColor: textColor,
+                                unselectedLabelColor:
+                                    isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.grey1,
+                                labelStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                                tabs: [
+                                  Tab(text: context.tr('nav_discover')),
+                                  Tab(text: context.tr('categories')),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-                ],
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                HomeTabView(
+                                  selectedDepartment: _selectedDepartment,
+                                  onDepartmentSelected: (department) {
+                                    setState(() {
+                                      _selectedDepartment = department;
+                                    });
+                                  },
+                                  selectedCategory: _selectedCategory,
+                                  onCategorySelected: (category) {
+                                    setState(() {
+                                      _selectedCategory = category;
+                                    });
+                                  },
+                                  onShowAll: () {
+                                    if (_selectedCategory != null ||
+                                        _selectedDepartment !=
+                                            StoreDepartment.all) {
+                                      setState(() {
+                                        _selectedCategory = null;
+                                        _selectedDepartment =
+                                            StoreDepartment.all;
+                                      });
+                                    } else {
+                                      context.read<HomeCubit>().getHomeData();
+                                    }
+                                  },
+                                ),
+                                CategoryTabView(
+                                  onCategoryTap: (categoryName) {
+                                    setState(() {
+                                      _selectedDepartment = StoreDepartment.all;
+                                      _selectedCategory =
+                                          categoryName == 'All Products'
+                                              ? null
+                                              : categoryName;
+                                    });
+                                    _tabController.animateTo(0);
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -498,11 +649,15 @@ class _ProductSearchDelegate extends SearchDelegate<Product?> {
   @override
   Widget buildResults(BuildContext context) {
     final value = query.trim();
-    if (value.isEmpty) { return _renderProductList(products, context); }
+    if (value.isEmpty) {
+      return _renderProductList(products, context);
+    }
     return FutureBuilder<List<Product>>(
       future: CatalogSearch().search(value),
       builder: (context, snapshot) {
-        if (snapshot.hasError) { return Center(child: Text('${snapshot.error}')); }
+        if (snapshot.hasError) {
+          return Center(child: Text('${snapshot.error}'));
+        }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }

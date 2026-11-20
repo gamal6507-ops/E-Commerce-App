@@ -28,12 +28,17 @@ test('admin follows fulfillment lifecycle', () => {
   assert.equal(transitionOrder('confirmed','shipped',true),'shipped');
   assert.throws(()=>transitionOrder('cancelled','shipped',true));
 });
-test('demo orders have no payment or fulfillment and cannot mix with real items', () => {
-  const demo = {...product, id:'sample', demo:true};
-  const line = {id:'line', product:{id:'sample'}, quantity:1};
-  const order = priceOrder([line], [demo], address);
-  assert.equal(order.status,'demo');
-  assert.equal(order.paymentMethod,'demo');
-  assert.throws(()=>transitionOrder(order.status,'confirmed',true));
-  assert.throws(()=>priceOrder([line,{...line,id:'real',product:{id:product.id}}],[product,demo],address));
+test('clothing items require size while market items checkout together via cash on delivery', () => {
+  const shirt = {...product, id:'shirt1', name:'Shirt', requiresSize:true};
+  const apple = {...product, id:'apple1', name:'Apples', requiresSize:false};
+  assert.throws(()=>priceOrder([{id:'l1', product:{id:'shirt1'}, quantity:1}], [shirt], address));
+  const order = priceOrder(
+    [{id:'l1', product:{id:'shirt1'}, quantity:1, size:'M'}, {id:'l2', product:{id:'apple1'}, quantity:1}],
+    [shirt, apple],
+    address,
+  );
+  assert.equal(order.status,'pending');
+  assert.equal(order.paymentMethod,'cash_on_delivery');
+  assert.equal(order.items[0].size,'M');
+  assert.equal(order.items[1].size,'none');
 });

@@ -9,7 +9,6 @@ import 'package:e_commerce_app/core/utils/app_route.dart';
 import 'package:e_commerce_app/core/utils/app_router.dart';
 import 'package:e_commerce_app/firebase_options.dart';
 import 'package:e_commerce_app/services/notification_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:material_ui/material_ui.dart';
@@ -93,10 +92,7 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            initialRoute:
-                FirebaseAuth.instance.currentUser != null
-                    ? AppRoute.homeRoute
-                    : AppRoute.loginRoute,
+            initialRoute: AppRoute.homeRoute,
             onGenerateRoute: AppRouter.onGenerateRoute,
           );
         },

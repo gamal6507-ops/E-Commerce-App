@@ -4,9 +4,9 @@ Flutter storefront with Arabic/English, Firebase authentication and private data
 
 [Open the web store](https://verve-store-delta.vercel.app/) · [Download the Android test APK](https://verve-store-delta.vercel.app/download/android)
 
-## Demo catalog
+## Store catalog
 
-Administrators can import 24 sample products from DummyJSON through the admin page or an authenticated POST to `/api/store?action=importDemoCatalog`. Importing again preserves existing edits and stock. Sample prices are illustrative EGP amounts. Sample orders are marked `demo`, never enter fulfillment and cannot be mixed with real products. Real orders continue to use cash on delivery. Staff can add an HTTPS tracking URL when recording shipment.
+Verve Store serves fashion, groceries/market, home, beauty and electronics products from Firestore. Administrators can synchronize the full catalog (194 items across 24 clothing and market categories from DummyJSON) through **Settings → Store administration** or an authenticated POST to `/api/store?action=importCatalog`. Re-syncing preserves existing merchant edits and stock. Clothing and footwear items (`Mens Shirts`, `Tops`, `Womens Dresses`, `Mens Shoes`, `Womens Shoes`) require size selection (`S`/`M`/`L`/`XL`); market and general products do not. Orders use cash on delivery (`pending` → `confirmed` → `shipped` → `delivered`). Staff can add an HTTPS tracking URL when recording shipment.
 
 ## Run and verify
 
@@ -40,7 +40,7 @@ Email/password and Google sign-in are enabled. The production hostname must rema
 
 ## Manage the store
 
-Sign in with the verified owner account, then open **Settings → Store administration**. Add your actual products, EGP prices, inventory and images using HTTPS. The new project intentionally starts without invented products or stock. Hidden products are unavailable to customers. Use the administration orders screen to confirm, ship and deliver orders, and review cancellation/return requests.
+Sign in with the verified owner account, then open **Settings → Store administration**. Add your actual products, EGP prices, inventory and HTTPS images, or sync the full clothing and market catalog directly from the administration panel. Hidden products are unavailable to customers. Use the administration orders screen to confirm, ship and deliver orders, and review cancellation/return requests.
 
 The server computes prices from Firestore and reserves stock in the same transaction as order creation and cart removal. The client persists an idempotency key until the server acknowledges checkout. Cancelling an order restores reserved stock once. Changing the client price, total or status does not determine the accepted order.
 

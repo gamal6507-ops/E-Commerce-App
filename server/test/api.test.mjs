@@ -13,7 +13,7 @@ test('API rejects missing or invalid Firebase identity',async()=>{
 });
 test('non-admin cannot read all orders or write catalog',async()=>{
  const handler=createHandler(()=>({db,auth:{async verifyIdToken(){return {uid:'alice',admin:false};}}}));
- for(const [action,method,query] of [['orders','GET',{admin:'true'}],['product','POST',{}],['importDemoCatalog','POST',{}]]){
+ for(const [action,method,query] of [['orders','GET',{admin:'true'}],['product','POST',{}],['importCatalog','POST',{}]]){
   const res=response();await handler({method,headers:{authorization:'Bearer fixture'},query:{action,...query},body:{}},res);
   assert.equal(res.code,403);
  }

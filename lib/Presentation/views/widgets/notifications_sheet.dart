@@ -166,8 +166,8 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
                             ),
                             label: Text(
                               context.isArabic
-                                  ? 'إرسال إشعار تجريبي'
-                                  : 'Send Test Notification',
+                                  ? 'معاينة الإشعارات'
+                                  : 'Preview Notification',
                             ),
                           ),
                         ],

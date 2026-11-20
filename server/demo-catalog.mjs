@@ -1,33 +1,53 @@
 import {StoreError, validateProduct} from './orders.mjs';
 
-const source = 'https://dummyjson.com/products?limit=24&select=title,price,thumbnail,description,category,stock,rating';
+const source = 'https://dummyjson.com/products?limit=0&select=title,price,thumbnail,description,category,stock,rating';
+const sizeCategories = new Set(['mens-shirts', 'mens-shoes', 'tops', 'womens-dresses', 'womens-shoes']);
 
-export async function importDemoCatalog(db, fetchCatalog = fetch) {
-  const response = await fetchCatalog(source, {signal: AbortSignal.timeout(10000)});
-  if (!response.ok) throw new StoreError('Sample catalog unavailable', 503);
+function formatCategory(raw) {
+  return String(raw || 'General')
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map(part => part[0].toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+export async function importStoreCatalog(db, fetchCatalog = fetch) {
+  const response = await fetchCatalog(source, {signal: AbortSignal.timeout(15000)});
+  if (!response.ok) throw new StoreError('Catalog API unavailable', 503);
   const {products} = await response.json();
-  if (!Array.isArray(products) || !products.length || products.length > 24) throw new StoreError('Invalid sample catalog', 502);
+  if (!Array.isArray(products) || !products.length || products.length > 500) throw new StoreError('Invalid catalog payload', 502);
   const records = products.map(item => {
-    if (!Number.isSafeInteger(item.id) || item.id < 1 || typeof item.title !== 'string') throw new StoreError('Invalid sample product', 502);
+    if (!Number.isSafeInteger(item.id) || item.id < 1 || typeof item.title !== 'string') throw new StoreError('Invalid catalog product', 502);
     const data = validateProduct({
-      name: item.title + ' · Demo / تجريبي',
-      description: 'للتجربة فقط، بدون دفع أو توصيل. Demo item. No payment or delivery.\n' + item.description,
-      price: item.price, category: item.category, stock: item.stock,
-      imgUrl: item.thumbnail, active: true, requiresSize: false,
+      name: item.title,
+      description: item.description || '',
+      price: item.price,
+      category: formatCategory(item.category),
+      stock: Math.max(0, Math.trunc(Number(item.stock) || 0)),
+      imgUrl: item.thumbnail,
+      active: true,
+      requiresSize: sizeCategories.has(item.category),
     });
-    return {...data, id: 'demo_dummyjson_' + item.id, demo: true, source: 'DummyJSON', averageRate: Number(item.rating) || 0};
+    return {...data, id: 'catalog_' + item.id, source: 'DummyJSON', averageRate: Number(item.rating) || 0};
   });
   // Preserve merchant edits and existing inventory on retries.
-  return db.runTransaction(async tx => {
-    const refs = records.map(record => db.collection('products').doc(record.id));
-    const snapshots = await tx.getAll(...refs);
-    let created = 0;
-    for (const [i, doc] of snapshots.entries()) {
-      if (!doc.exists) {
-        tx.create(refs[i], records[i]);
-        created++;
+  let created = 0;
+  for (let offset = 0; offset < records.length; offset += 100) {
+    const chunk = records.slice(offset, offset + 100);
+    created += await db.runTransaction(async tx => {
+      const refs = chunk.map(record => db.collection('products').doc(record.id));
+      const snapshots = await tx.getAll(...refs);
+      let chunkCreated = 0;
+      for (const [i, doc] of snapshots.entries()) {
+        if (!doc.exists) {
+          tx.create(refs[i], chunk[i]);
+          chunkCreated++;
+        }
       }
-    }
-    return {created, existing: records.length - created};
-  });
+      return chunkCreated;
+    });
+  }
+  return {created, existing: records.length - created, total: records.length};
 }
+
+export const importDemoCatalog = importStoreCatalog;

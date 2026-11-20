@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/data/datasources/store_api.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
+import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'orders_page.dart';
 
 class AdminPage extends StatefulWidget {
@@ -27,11 +28,11 @@ class _AdminPageState extends State<AdminPage> {
 
   bool _importing = false;
 
-  Future<void> _importDemoCatalog() async {
+  Future<void> _syncStoreCatalog() async {
     setState(() => _importing = true);
     try {
       final result = await StoreApi.instance.request(
-        'importDemoCatalog',
+        'importCatalog',
         method: 'POST',
       );
       if (mounted) {
@@ -40,8 +41,8 @@ class _AdminPageState extends State<AdminPage> {
           SnackBar(
             content: Text(
               context.isArabic
-                  ? 'منتجات تجريبية جديدة: $count'
-                  : 'New demo products: $count',
+                  ? 'تمت إضافة $count منتج جديد إلى الكتالوج'
+                  : 'Added $count new catalog products',
             ),
           ),
         );
@@ -220,73 +221,90 @@ class _AdminPageState extends State<AdminPage> {
             ),
           );
         }
-        return Column(
-          children: [
-            Wrap(
-              children: [
-                TextButton.icon(
-                  onPressed: _importing ? null : _importDemoCatalog,
-                  icon: const Icon(Icons.download),
-                  label: Text(
-                    context.isArabic
-                        ? 'استيراد منتجات تجريبية'
-                        : 'Import demo products',
-                  ),
+        return ResponsiveContainer(
+          maxWidth: 1080,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                TextButton.icon(
-                  onPressed: () => _edit(),
-                  icon: const Icon(Icons.add),
-                  label: Text(context.isArabic ? 'إضافة منتج' : 'Add product'),
-                ),
-                TextButton.icon(
-                  onPressed:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const OrdersPage(admin: true),
-                        ),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _importing ? null : _syncStoreCatalog,
+                      icon: const Icon(Icons.sync_rounded),
+                      label: Text(
+                        context.isArabic
+                            ? 'مزامنة كتالوج الملابس والماركت'
+                            : 'Sync Store Catalog',
                       ),
-                  icon: const Icon(Icons.receipt_long),
-                  label: Text(
-                    context.isArabic ? 'إدارة الطلبات' : 'Manage orders',
-                  ),
-                ),
-              ],
-            ),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                stream:
-                    FirebaseFirestore.instance
-                        .collection('products')
-                        .orderBy('name')
-                        .limit(200)
-                        .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text('${snapshot.error}'));
-                  }
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return ListView(
-                    children: [
-                      for (final doc in snapshot.data!.docs)
-                        ListTile(
-                          title: Text(doc.data()['name'] ?? doc.id),
-                          subtitle: Text(
-                            context.isArabic
-                                ? 'EGP ${doc.data()['price']} • المخزون: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'متاح' : 'مخفي'}${doc.data()['demo'] == true ? ' • تجريبي' : ''}'
-                                : 'EGP ${doc.data()['price']} • Stock: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'Active' : 'Hidden'}${doc.data()['demo'] == true ? ' • Demo' : ''}',
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _edit(),
+                      icon: const Icon(Icons.add),
+                      label: Text(
+                        context.isArabic ? 'إضافة منتج' : 'Add product',
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const OrdersPage(admin: true),
+                            ),
                           ),
-                          trailing: const Icon(Icons.edit),
-                          onTap: () => _edit({...doc.data(), 'id': doc.id}),
-                        ),
-                    ],
-                  );
-                },
+                      icon: const Icon(Icons.receipt_long),
+                      label: Text(
+                        context.isArabic ? 'إدارة الطلبات' : 'Manage orders',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('products')
+                          .orderBy('name')
+                          .limit(300)
+                          .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(child: Text('${snapshot.error}'));
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      children: [
+                        for (final doc in snapshot.data!.docs)
+                          Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(doc.data()['name'] ?? doc.id),
+                              subtitle: Text(
+                                context.isArabic
+                                    ? 'EGP ${doc.data()['price']} • المخزون: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'متاح' : 'مخفي'}'
+                                    : 'EGP ${doc.data()['price']} • Stock: ${doc.data()['stock']} • ${doc.data()['active'] == true ? 'Active' : 'Hidden'}',
+                              ),
+                              trailing: const Icon(Icons.edit),
+                              onTap: () => _edit({...doc.data(), 'id': doc.id}),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     ),

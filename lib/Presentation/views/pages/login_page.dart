@@ -125,6 +125,18 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
+                        if (Navigator.of(context).canPop()) ...[
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: Icon(
+                              context.isArabic
+                                  ? Icons.arrow_forward_ios_rounded
+                                  : Icons.arrow_back_ios_new_rounded,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(

@@ -23,7 +23,7 @@ dependencies {
 android {
     namespace = "com.example.e_commerc_app"
 
-    compileSdk = 36
+    compileSdk = flutter.compileSdkVersion
 
     ndkVersion = "28.2.13676358"
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce_app/data/datasources/firestore_services.dart';
 import 'package:e_commerce_app/data/datasources/product_local_cache.dart';
@@ -43,8 +44,7 @@ class HomeRepositoryImpl implements HomeRepository {
           (doc) => ProductItemModel.fromMap({...doc.data(), 'id': doc.id}),
         ),
       ];
-      await ProductLocalCache.instance.clearAll();
-      await ProductLocalCache.instance.cacheProducts(products);
+      unawaited(ProductLocalCache.instance.cacheProducts(products));
       _products = products;
       return products;
     } catch (_) {

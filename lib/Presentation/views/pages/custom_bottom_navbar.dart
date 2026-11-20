@@ -23,12 +23,14 @@ class CustomBottomNavbar extends StatefulWidget {
 
 class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
   late final PersistentTabController _controller;
+  late final Stream<User?> _authStream;
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _controller = PersistentTabController();
+    _authStream = FirebaseAuth.instance.authStateChanges();
   }
 
   @override
@@ -168,8 +170,7 @@ class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
                     InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () => _switchTab(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 160),
+                      child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 9,
@@ -223,6 +224,10 @@ class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
               ),
             ),
             BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
+              buildWhen:
+                  (previous, current) =>
+                      previous.themeMode != current.themeMode ||
+                      previous.locale != current.locale,
               builder: (context, prefState) {
                 final isAr = prefState.locale.languageCode == 'ar';
                 final dark = prefState.themeMode == ThemeMode.dark;
@@ -275,7 +280,7 @@ class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
                     ),
                     const SizedBox(width: 8),
                     StreamBuilder<User?>(
-                      stream: FirebaseAuth.instance.authStateChanges(),
+                      stream: _authStream,
                       builder: (context, snapshot) {
                         final user =
                             snapshot.data ?? FirebaseAuth.instance.currentUser;
@@ -380,17 +385,22 @@ class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (ResponsiveLayout.useDesktopNav(constraints.maxWidth)) {
-          final pages = const [
-            HomePage(),
-            CartPage(),
-            FavoritesPage(),
-            ProfilePage(),
-          ];
+          final secondaryTab = switch (_selectedIndex) {
+            1 => const CartPage(),
+            2 => const FavoritesPage(),
+            3 => const ProfilePage(),
+            _ => const SizedBox.shrink(),
+          };
           return Scaffold(
             body: Column(
               children: [
                 _buildDesktopHeader(context),
-                Expanded(child: pages[_selectedIndex]),
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedIndex == 0 ? 0 : 1,
+                    children: [const HomePage(), secondaryTab],
+                  ),
+                ),
               ],
             ),
           );

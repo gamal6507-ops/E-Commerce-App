@@ -17,7 +17,13 @@ class ProductItem extends StatefulWidget {
 }
 
 class _ProductItemState extends State<ProductItem> {
-  bool _hovered = false;
+  final ValueNotifier<bool> _hovered = ValueNotifier<bool>(false);
+
+  @override
+  void dispose() {
+    _hovered.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,34 +32,45 @@ class _ProductItemState extends State<ProductItem> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.surfaceCardDark : AppColors.surfaceCard;
     final softBg = isDark ? AppColors.surfaceSoftDark : AppColors.surfaceSoft;
-    final borderColor =
-        _hovered
-            ? AppColors.accentColor.withValues(alpha: 0.65)
-            : (isDark ? AppColors.borderDark : AppColors.borderLight);
+    final baseBorderColor =
+        isDark ? AppColors.borderDark : AppColors.borderLight;
     final textColor = isDark ? AppColors.textDark : AppColors.black;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor, width: _hovered ? 1.4 : 1.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(
-                alpha:
-                    _hovered ? (isDark ? 0.32 : 0.09) : (isDark ? 0.2 : 0.04),
+      onEnter: (_) => _hovered.value = true,
+      onExit: (_) => _hovered.value = false,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _hovered,
+        builder: (context, hovered, child) {
+          return Container(
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color:
+                    hovered
+                        ? AppColors.accentColor.withValues(alpha: 0.7)
+                        : baseBorderColor,
+                width: hovered ? 1.4 : 1.0,
               ),
-              blurRadius: _hovered ? 18 : 10,
-              offset: Offset(0, _hovered ? 8 : 4),
+              boxShadow:
+                  hovered
+                      ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.28 : 0.08,
+                          ),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                      : null,
             ),
-          ],
-        ),
-        padding: const EdgeInsets.all(11),
+            padding: const EdgeInsets.all(11),
+            child: child,
+          );
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -73,6 +90,9 @@ class _ProductItemState extends State<ProductItem> {
                         child: CachedNetworkImage(
                           imageUrl: productItem.imgUrl,
                           fit: BoxFit.contain,
+                          memCacheWidth: 420,
+                          fadeInDuration: const Duration(milliseconds: 90),
+                          fadeOutDuration: const Duration(milliseconds: 60),
                           placeholder:
                               (context, url) => const Center(
                                 child: SizedBox(
@@ -200,14 +220,31 @@ class _ProductItemState extends State<ProductItem> {
                             );
                           }
                         },
-                        buildWhen:
-                            (previous, current) =>
-                                current is FavoriteLoaded ||
-                                current is FavoriteInitial ||
-                                (current is SetFavoriteLoading &&
-                                    current.productId == productItem.id) ||
-                                (current is FavoriteRemoving &&
-                                    current.productId == productItem.id),
+                        buildWhen: (previous, current) {
+                          bool isLoadingForItem(FavoriteState s) =>
+                              (s is SetFavoriteLoading &&
+                                  s.productId == productItem.id) ||
+                              (s is FavoriteRemoving &&
+                                  s.productId == productItem.id);
+                          if (isLoadingForItem(previous) !=
+                              isLoadingForItem(current)) {
+                            return true;
+                          }
+                          if (current is FavoriteLoaded &&
+                              previous is FavoriteLoaded) {
+                            final wasFav = previous.favoriteProducts.any(
+                              (p) => p.id == productItem.id,
+                            );
+                            final isFavNow = current.favoriteProducts.any(
+                              (p) => p.id == productItem.id,
+                            );
+                            return wasFav != isFavNow;
+                          }
+                          return current is FavoriteLoaded ||
+                              current is FavoriteInitial ||
+                              (current is SetFavoriteLoadedError &&
+                                  current.productId == productItem.id);
+                        },
                         builder: (context, state) {
                           final isFavLoading =
                               (state is SetFavoriteLoading &&

@@ -1,3 +1,5 @@
+import 'package:e_commerce_app/data/datasources/external_catalog_service.dart';
+import 'package:e_commerce_app/data/datasources/product_local_cache.dart';
 import 'package:e_commerce_app/data/repositories/auth_repository_impl.dart';
 import 'package:e_commerce_app/data/repositories/favorite_repository_impl.dart';
 import 'package:e_commerce_app/data/repositories/home_repository_impl.dart';
@@ -32,6 +34,7 @@ class HomeCubit extends Cubit<HomeState> {
     }
     _loading = true;
     final previous = state;
+    var servedCache = false;
     if (loadMore && previous is HomeLoaded) {
       emit(
         HomeLoaded(
@@ -43,7 +46,27 @@ class HomeCubit extends Cubit<HomeState> {
         ),
       );
     } else {
-      emit(HomeLoading());
+      if (_homeRepository is HomeRepositoryImpl) {
+        final cached = await ProductLocalCache.instance.getCachedProducts(
+          ignoreExpiration: false,
+        );
+        if (!isClosed && cached != null && cached.isNotEmpty) {
+          servedCache = true;
+          emit(
+            HomeLoaded(
+              carouselItems: ExternalCatalogService.instance
+                  .buildCarouselFromProducts(cached),
+              products: cached,
+              categories: ExternalCatalogService.instance
+                  .buildCategoriesFromProducts(cached),
+              hasMore: cached.length == 200,
+            ),
+          );
+        }
+      }
+      if (!servedCache && !isClosed) {
+        emit(HomeLoading());
+      }
     }
     try {
       final currentUserId = _authRepository.currentUserId;
@@ -54,13 +77,13 @@ class HomeCubit extends Cubit<HomeState> {
           currentUserId != null
               ? await _favoriteRepository.getFavorites(currentUserId)
               : <Product>[];
+      final favoriteIds = favoriteProducts.map((item) => item.id).toSet();
 
       final List<Product> finalProducts =
           products.map((product) {
-            final isFavorite = favoriteProducts.any(
-              (item) => item.id == product.id,
+            return product.copyWith(
+              isFavorite: favoriteIds.contains(product.id),
             );
-            return product.copyWith(isFavorite: isFavorite);
           }).toList();
       if (isClosed) return;
       emit(
@@ -73,7 +96,9 @@ class HomeCubit extends Cubit<HomeState> {
       );
     } catch (e) {
       if (isClosed) return;
-      emit(HomeError(e.toString()));
+      if (!servedCache) {
+        emit(HomeError(e.toString()));
+      }
     } finally {
       _loading = false;
     }

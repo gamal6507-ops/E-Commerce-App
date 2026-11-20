@@ -47,8 +47,21 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.instance.flushPending();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,20 +83,19 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
+        buildWhen:
+            (previous, current) =>
+                previous.themeMode != current.themeMode ||
+                previous.locale != current.locale,
         builder: (context, prefState) {
           return MaterialApp(
             navigatorKey: navigtorKey,
-            builder: (context, child) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                NotificationService.instance.flushPending();
-              });
-              return child!;
-            },
             debugShowCheckedModeBanner: false,
             title: 'Verve Store',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: prefState.themeMode,
+            themeAnimationDuration: Duration.zero,
             locale: prefState.locale,
             supportedLocales: const [Locale('en'), Locale('ar')],
             localizationsDelegates: const [

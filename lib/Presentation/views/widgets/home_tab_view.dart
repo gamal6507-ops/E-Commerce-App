@@ -36,6 +36,11 @@ class HomeTabView extends StatefulWidget {
 
 class _HomeTabViewState extends State<HomeTabView> {
   ProductSort _sort = ProductSort.featured;
+  List<Product>? _cachedSource;
+  StoreDepartment? _cachedDepartment;
+  String? _cachedCategory;
+  ProductSort? _cachedSort;
+  List<Product> _cachedFiltered = const [];
 
   String _departmentLabel(BuildContext context, StoreDepartment department) {
     final ar = context.isArabic;
@@ -61,6 +66,13 @@ class _HomeTabViewState extends State<HomeTabView> {
   }
 
   List<Product> _filterAndSort(List<Product> products) {
+    if (identical(products, _cachedSource) &&
+        _cachedDepartment == widget.selectedDepartment &&
+        _cachedCategory == widget.selectedCategory &&
+        _cachedSort == _sort) {
+      return _cachedFiltered;
+    }
+
     var list =
         products.where((p) {
           if (widget.selectedCategory != null) {
@@ -87,6 +99,12 @@ class _HomeTabViewState extends State<HomeTabView> {
       case ProductSort.featured:
         break;
     }
+
+    _cachedSource = products;
+    _cachedDepartment = widget.selectedDepartment;
+    _cachedCategory = widget.selectedCategory;
+    _cachedSort = _sort;
+    _cachedFiltered = list;
     return list;
   }
 
@@ -96,130 +114,133 @@ class _HomeTabViewState extends State<HomeTabView> {
     required double height,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return FlutterCarousel.builder(
-      itemCount: state.carouselItems.length,
-      itemBuilder: (context, itemIndex, pageViewIndex) {
-        final banner = state.carouselItems[itemIndex];
-        final productMatch = state.products.where((p) => p.id == banner.id);
-        final product = productMatch.isNotEmpty ? productMatch.first : null;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.0),
-          child: GestureDetector(
-            onTap: () {
-              if (product != null) {
-                Navigator.of(
-                  context,
-                  rootNavigator: true,
-                ).pushNamed(AppRoute.productDetailsRoute, arguments: banner.id);
-              }
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    color:
-                        isDark
-                            ? AppColors.surfaceCardDark
-                            : AppColors.primaryColor,
-                  ),
-                  CachedNetworkImage(
-                    imageUrl: banner.imgUrl,
-                    fit: BoxFit.cover,
-                    placeholder:
-                        (context, url) => const Center(
-                          child: CircularProgressIndicator.adaptive(),
-                        ),
-                    errorWidget:
-                        (context, url, error) => const Center(
-                          child: Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 40,
-                            color: AppColors.grey1,
+    return RepaintBoundary(
+      child: FlutterCarousel.builder(
+        itemCount: state.carouselItems.length,
+        itemBuilder: (context, itemIndex, pageViewIndex) {
+          final banner = state.carouselItems[itemIndex];
+          final productMatch = state.products.where((p) => p.id == banner.id);
+          final product = productMatch.isNotEmpty ? productMatch.first : null;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            child: GestureDetector(
+              onTap: () {
+                if (product != null) {
+                  Navigator.of(context, rootNavigator: true).pushNamed(
+                    AppRoute.productDetailsRoute,
+                    arguments: banner.id,
+                  );
+                }
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      color:
+                          isDark
+                              ? AppColors.surfaceCardDark
+                              : AppColors.primaryColor,
+                    ),
+                    CachedNetworkImage(
+                      imageUrl: banner.imgUrl,
+                      fit: BoxFit.cover,
+                      placeholder:
+                          (context, url) => const Center(
+                            child: CircularProgressIndicator.adaptive(),
                           ),
+                      errorWidget:
+                          (context, url, error) => const Center(
+                            child: Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 40,
+                              color: AppColors.grey1,
+                            ),
+                          ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.78),
+                          ],
+                          stops: const [0.4, 1.0],
                         ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.78),
-                        ],
-                        stops: const [0.4, 1.0],
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: 18,
-                    bottom: 18,
-                    right: 18,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                    Positioned(
+                      left: 18,
+                      bottom: 18,
+                      right: 18,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accentColor,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              context.tr('featured').toUpperCase(),
+                              style: const TextStyle(
+                                color: AppColors.white1,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accentColor,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            context.tr('featured').toUpperCase(),
+                          const SizedBox(height: 6),
+                          Text(
+                            product?.name ??
+                                (context.isArabic
+                                    ? 'تشكيلات الملابس والماركت'
+                                    : 'Curated Fashion & Market'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: AppColors.white1,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          product?.name ??
-                              (context.isArabic
-                                  ? 'تشكيلات الملابس والماركت'
-                                  : 'Curated Fashion & Market'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.white1,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (product != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'EGP ${product.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              color: AppColors.accentSoft,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w800,
+                          if (product != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'EGP ${product.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                color: AppColors.accentSoft,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
-      options: FlutterCarouselOptions(
-        height: height,
-        viewportFraction: 1.0,
-        showIndicator: true,
-        autoPlay: true,
-        slideIndicator: CircularWaveSlideIndicator(),
+          );
+        },
+        options: FlutterCarouselOptions(
+          height: height,
+          viewportFraction: 1.0,
+          showIndicator: true,
+          autoPlay: true,
+          autoPlayInterval: const Duration(seconds: 5),
+          slideIndicator: CircularWaveSlideIndicator(),
+        ),
       ),
     );
   }
@@ -476,251 +497,262 @@ class _HomeTabViewState extends State<HomeTabView> {
 
               return RefreshIndicator(
                 onRefresh: () => context.read<HomeCubit>().getHomeData(),
-                child: SingleChildScrollView(
+                child: CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 28),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (desktopHero)
-                        _buildDesktopEditorialHero(context, state)
-                      else if (state.carouselItems.isNotEmpty)
-                        _buildCarouselBanner(context, state, height: 190),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        height: 40,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: StoreDepartment.values.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final dept = StoreDepartment.values[index];
-                            final selected =
-                                widget.selectedDepartment == dept &&
-                                widget.selectedCategory == null;
-                            return ChoiceChip(
-                              avatar: Icon(
-                                _departmentIcon(dept),
-                                size: 16,
-                                color:
-                                    selected
-                                        ? AppColors.white1
-                                        : AppColors.accentColor,
-                              ),
-                              label: Text(_departmentLabel(context, dept)),
-                              selected: selected,
-                              showCheckmark: false,
-                              selectedColor: AppColors.accentColor,
-                              backgroundColor: cardBg,
-                              labelStyle: TextStyle(
-                                color: selected ? AppColors.white1 : textColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(
-                                  color:
-                                      selected
-                                          ? AppColors.accentColor
-                                          : borderColor,
-                                ),
-                              ),
-                              onSelected: (_) {
-                                widget.onCategorySelected?.call(null);
-                                widget.onDepartmentSelected?.call(dept);
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 38,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categoryChips.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final label = categoryChips[index];
-                            final displayLabel =
-                                label == 'All'
-                                    ? context.tr('all')
-                                    : context.trCategory(label);
-                            final isSelected =
-                                (label == 'All' &&
-                                    widget.selectedCategory == null) ||
-                                (widget.selectedCategory != null &&
-                                    label.toLowerCase() ==
-                                        widget.selectedCategory!.toLowerCase());
-                            return ChoiceChip(
-                              label: Text(displayLabel),
-                              selected: isSelected,
-                              showCheckmark: false,
-                              selectedColor:
-                                  isDark
-                                      ? AppColors.accentColor
-                                      : AppColors.primaryColor,
-                              backgroundColor: cardBg,
-                              labelStyle: TextStyle(
-                                color:
-                                    isSelected ? AppColors.white1 : textColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12.5,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(
-                                  color:
-                                      isSelected
-                                          ? (isDark
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (desktopHero)
+                            _buildDesktopEditorialHero(context, state)
+                          else if (state.carouselItems.isNotEmpty)
+                            _buildCarouselBanner(context, state, height: 190),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            height: 40,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: StoreDepartment.values.length,
+                              separatorBuilder:
+                                  (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final dept = StoreDepartment.values[index];
+                                final selected =
+                                    widget.selectedDepartment == dept &&
+                                    widget.selectedCategory == null;
+                                return ChoiceChip(
+                                  avatar: Icon(
+                                    _departmentIcon(dept),
+                                    size: 16,
+                                    color:
+                                        selected
+                                            ? AppColors.white1
+                                            : AppColors.accentColor,
+                                  ),
+                                  label: Text(_departmentLabel(context, dept)),
+                                  selected: selected,
+                                  showCheckmark: false,
+                                  selectedColor: AppColors.accentColor,
+                                  backgroundColor: cardBg,
+                                  labelStyle: TextStyle(
+                                    color:
+                                        selected ? AppColors.white1 : textColor,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12.5,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(
+                                      color:
+                                          selected
                                               ? AppColors.accentColor
-                                              : AppColors.primaryColor)
-                                          : borderColor,
-                                ),
-                              ),
-                              onSelected: (_) {
-                                widget.onCategorySelected?.call(
-                                  label == 'All' ? null : label,
+                                              : borderColor,
+                                    ),
+                                  ),
+                                  onSelected: (_) {
+                                    widget.onCategorySelected?.call(null);
+                                    widget.onDepartmentSelected?.call(dept);
+                                  },
                                 );
                               },
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: Wrap(
-                          spacing: 12,
-                          runSpacing: 8,
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    widget.selectedCategory != null
-                                        ? context.trCategory(
-                                          widget.selectedCategory!,
-                                        )
-                                        : widget.selectedDepartment !=
-                                            StoreDepartment.all
-                                        ? _departmentLabel(
-                                          context,
-                                          widget.selectedDepartment,
-                                        )
-                                        : context.tr('trending_products'),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleLarge!.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: textColor,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: cardBg,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: borderColor),
-                                  ),
-                                  child: Text(
-                                    '${displayedProducts.length}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: subtextColor,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ),
-                            Wrap(
-                              spacing: 6,
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            height: 38,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: categoryChips.length,
+                              separatorBuilder:
+                                  (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final label = categoryChips[index];
+                                final displayLabel =
+                                    label == 'All'
+                                        ? context.tr('all')
+                                        : context.trCategory(label);
+                                final isSelected =
+                                    (label == 'All' &&
+                                        widget.selectedCategory == null) ||
+                                    (widget.selectedCategory != null &&
+                                        label.toLowerCase() ==
+                                            widget.selectedCategory!
+                                                .toLowerCase());
+                                return ChoiceChip(
+                                  label: Text(displayLabel),
+                                  selected: isSelected,
+                                  showCheckmark: false,
+                                  selectedColor:
+                                      isDark
+                                          ? AppColors.accentColor
+                                          : AppColors.primaryColor,
+                                  backgroundColor: cardBg,
+                                  labelStyle: TextStyle(
+                                    color:
+                                        isSelected
+                                            ? AppColors.white1
+                                            : textColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12.5,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(
+                                      color:
+                                          isSelected
+                                              ? (isDark
+                                                  ? AppColors.accentColor
+                                                  : AppColors.primaryColor)
+                                              : borderColor,
+                                    ),
+                                  ),
+                                  onSelected: (_) {
+                                    widget.onCategorySelected?.call(
+                                      label == 'All' ? null : label,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                            child: Wrap(
+                              spacing: 12,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.spaceBetween,
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                DropdownButtonHideUnderline(
-                                  child: DropdownButton<ProductSort>(
-                                    value: _sort,
-                                    borderRadius: BorderRadius.circular(12),
-                                    style: TextStyle(
-                                      color: textColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        widget.selectedCategory != null
+                                            ? context.trCategory(
+                                              widget.selectedCategory!,
+                                            )
+                                            : widget.selectedDepartment !=
+                                                StoreDepartment.all
+                                            ? _departmentLabel(
+                                              context,
+                                              widget.selectedDepartment,
+                                            )
+                                            : context.tr('trending_products'),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge!.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: textColor,
+                                        ),
+                                      ),
                                     ),
-                                    items: [
-                                      DropdownMenuItem(
-                                        value: ProductSort.featured,
-                                        child: Text(
-                                          context.isArabic
-                                              ? 'الترتيب الافتراضي'
-                                              : 'Sort: Featured',
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: cardBg,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: borderColor),
+                                      ),
+                                      child: Text(
+                                        '${displayedProducts.length}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: subtextColor,
                                         ),
                                       ),
-                                      DropdownMenuItem(
-                                        value: ProductSort.priceLowHigh,
-                                        child: Text(
-                                          context.isArabic
-                                              ? 'السعر: من الأقل'
-                                              : 'Price: Low to High',
-                                        ),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: ProductSort.priceHighLow,
-                                        child: Text(
-                                          context.isArabic
-                                              ? 'السعر: من الأعلى'
-                                              : 'Price: High to Low',
-                                        ),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: ProductSort.topRated,
-                                        child: Text(
-                                          context.isArabic
-                                              ? 'الأعلى تقييمًا'
-                                              : 'Top Rated',
-                                        ),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      if (value != null) {
-                                        setState(() => _sort = value);
-                                      }
-                                    },
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                TextButton(
-                                  onPressed: widget.onShowAll,
-                                  child: Text(
-                                    (widget.selectedCategory != null ||
-                                            widget.selectedDepartment !=
-                                                StoreDepartment.all)
-                                        ? context.tr('view_all')
-                                        : context.tr('refresh'),
-                                    style: const TextStyle(
-                                      color: AppColors.accentColor,
-                                      fontWeight: FontWeight.w700,
+                                Wrap(
+                                  spacing: 6,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    DropdownButtonHideUnderline(
+                                      child: DropdownButton<ProductSort>(
+                                        value: _sort,
+                                        borderRadius: BorderRadius.circular(12),
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        items: [
+                                          DropdownMenuItem(
+                                            value: ProductSort.featured,
+                                            child: Text(
+                                              context.isArabic
+                                                  ? 'الترتيب الافتراضي'
+                                                  : 'Sort: Featured',
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: ProductSort.priceLowHigh,
+                                            child: Text(
+                                              context.isArabic
+                                                  ? 'السعر: من الأقل'
+                                                  : 'Price: Low to High',
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: ProductSort.priceHighLow,
+                                            child: Text(
+                                              context.isArabic
+                                                  ? 'السعر: من الأعلى'
+                                                  : 'Price: High to Low',
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: ProductSort.topRated,
+                                            child: Text(
+                                              context.isArabic
+                                                  ? 'الأعلى تقييمًا'
+                                                  : 'Top Rated',
+                                            ),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() => _sort = value);
+                                          }
+                                        },
+                                      ),
                                     ),
-                                  ),
+                                    TextButton(
+                                      onPressed: widget.onShowAll,
+                                      child: Text(
+                                        (widget.selectedCategory != null ||
+                                                widget.selectedDepartment !=
+                                                    StoreDepartment.all)
+                                            ? context.tr('view_all')
+                                            : context.tr('refresh'),
+                                        style: const TextStyle(
+                                          color: AppColors.accentColor,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      if (displayedProducts.isEmpty)
-                        Center(
+                    ),
+                    if (displayedProducts.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 40.0),
                             child: Text(
@@ -734,61 +766,68 @@ class _HomeTabViewState extends State<HomeTabView> {
                               style: TextStyle(color: textColor),
                             ),
                           ),
-                        )
-                      else
-                        GridView.builder(
-                          itemCount: displayedProducts.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: columns,
-                                mainAxisSpacing: 16,
-                                crossAxisSpacing: 16,
-                                mainAxisExtent: 294,
-                              ),
-                          itemBuilder: (context, index) {
-                            final product = displayedProducts[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.of(
-                                  context,
-                                  rootNavigator: true,
-                                ).pushNamed(
-                                  AppRoute.productDetailsRoute,
-                                  arguments: product.id,
-                                );
-                              },
-                              child: ProductItem(productItem: product),
-                            );
-                          },
                         ),
-                      if (state.hasMore)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 16),
-                            child: OutlinedButton(
-                              onPressed:
-                                  state.loadingMore
-                                      ? null
-                                      : () => context
-                                          .read<HomeCubit>()
-                                          .getHomeData(loadMore: true),
-                              child: Text(
-                                state.loadingMore
-                                    ? (context.isArabic
-                                        ? 'جارٍ التحميل...'
-                                        : 'Loading...')
-                                    : (context.isArabic
-                                        ? 'تحميل المزيد'
-                                        : 'Load more'),
-                              ),
-                            ),
-                          ),
+                      )
+                    else
+                      SliverGrid.builder(
+                        itemCount: displayedProducts.length,
+                        addAutomaticKeepAlives: false,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          mainAxisExtent: 294,
                         ),
-                      _buildStoreFooter(context),
-                    ],
-                  ),
+                        itemBuilder: (context, index) {
+                          final product = displayedProducts[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).pushNamed(
+                                AppRoute.productDetailsRoute,
+                                arguments: product.id,
+                              );
+                            },
+                            child: ProductItem(productItem: product),
+                          );
+                        },
+                      ),
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 28),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          children: [
+                            if (state.hasMore)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 16),
+                                  child: OutlinedButton(
+                                    onPressed:
+                                        state.loadingMore
+                                            ? null
+                                            : () => context
+                                                .read<HomeCubit>()
+                                                .getHomeData(loadMore: true),
+                                    child: Text(
+                                      state.loadingMore
+                                          ? (context.isArabic
+                                              ? 'جارٍ التحميل...'
+                                              : 'Loading...')
+                                          : (context.isArabic
+                                              ? 'تحميل المزيد'
+                                              : 'Load more'),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            _buildStoreFooter(context),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },

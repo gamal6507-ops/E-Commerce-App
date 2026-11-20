@@ -1,15 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_cubit.dart';
+import 'package:e_commerce_app/Presentation/controller/app_preferences_cubit/app_preferences_state.dart';
 import 'package:e_commerce_app/Presentation/controller/favorite_cubit/favorite_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/home_cubit/home_cubit.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/home_tab_view.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/product_item.dart';
 import 'package:e_commerce_app/core/localization/app_localizations.dart';
+import 'package:e_commerce_app/core/theme/app_theme.dart';
 import 'package:e_commerce_app/core/utils/responsive.dart';
 import 'package:e_commerce_app/domain/repositories/home_repository.dart';
 import 'package:e_commerce_app/domain/repositories/favorite_repository.dart';
@@ -181,6 +185,85 @@ void main() {
       }
       await tester.binding.setSurfaceSize(null);
       await tester.pumpWidget(const SizedBox());
+      await homeCubit.close();
+      await favCubit.close();
+    },
+  );
+  testWidgets(
+    'large 194-product catalog is virtualized and switches dark/light theme in one frame',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final items = List.generate(
+        194,
+        (i) => Product(
+          id: 'catalog_${i + 1}',
+          name: 'Product ${i + 1}',
+          imgUrl: '',
+          price: 10.0 + i,
+          category: i.isEven ? 'Mens Shirts' : 'Groceries',
+          requiresSize: i.isEven,
+          stock: 20,
+        ),
+      );
+      final homeCubit = HomeCubit(
+        homeRepository: _Catalog(items),
+        favoriteRepository: _Favorites(),
+        authRepository: _Auth(),
+      );
+      final favCubit = FavoriteCubit(
+        favoriteRepository: _Favorites(),
+        authRepository: _Auth(),
+      );
+      final prefCubit = AppPreferencesCubit();
+      await homeCubit.getHomeData();
+      await tester.binding.setSurfaceSize(const Size(1280, 800));
+
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: prefCubit),
+            BlocProvider.value(value: homeCubit),
+            BlocProvider.value(value: favCubit),
+          ],
+          child: BlocBuilder<AppPreferencesCubit, AppPreferencesState>(
+            builder: (context, prefState) {
+              return MaterialApp(
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: prefState.themeMode,
+                themeAnimationDuration: Duration.zero,
+                home: const Scaffold(body: HomeTabView()),
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Virtualized SliverGrid mounts only visible viewport cards, not all 194.
+      final mountedCount = find.byType(ProductItem).evaluate().length;
+      expect(mountedCount, greaterThan(0));
+      expect(mountedCount, lessThan(40));
+
+      await prefCubit.toggleTheme();
+      await tester.pump();
+      expect(prefCubit.state.themeMode, ThemeMode.dark);
+      expect(
+        Theme.of(tester.element(find.byType(HomeTabView))).brightness,
+        Brightness.dark,
+      );
+
+      await prefCubit.toggleTheme();
+      await tester.pump();
+      expect(prefCubit.state.themeMode, ThemeMode.light);
+      expect(
+        Theme.of(tester.element(find.byType(HomeTabView))).brightness,
+        Brightness.light,
+      );
+
+      await tester.binding.setSurfaceSize(null);
+      await tester.pumpWidget(const SizedBox());
+      await prefCubit.close();
       await homeCubit.close();
       await favCubit.close();
     },

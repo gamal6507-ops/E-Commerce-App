@@ -265,6 +265,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                             context.isArabic
                                                 ? 'أزياء وماركت متكامل'
                                                 : 'Fashion & Market Store',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: Theme.of(
                                               context,
                                             ).textTheme.bodySmall!.copyWith(
@@ -280,6 +282,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     ),
                                     if (!isSignedIn) ...[
                                       TextButton(
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                          minimumSize: const Size(0, 36),
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
                                         onPressed:
                                             () => Navigator.of(
                                               context,
@@ -287,40 +297,91 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                             ).pushNamed(AppRoute.loginRoute),
                                         child: Text(context.tr('sign_in')),
                                       ),
-                                      const SizedBox(width: 4),
                                     ],
                                     BlocBuilder<
                                       AppPreferencesCubit,
                                       AppPreferencesState
                                     >(
+                                      buildWhen:
+                                          (previous, current) =>
+                                              previous.themeMode !=
+                                                  current.themeMode ||
+                                              previous.locale != current.locale,
                                       builder:
-                                          (context, prefState) => IconButton(
-                                            tooltip: context.tr(
-                                              'settings_language',
-                                            ),
-                                            icon: Text(
-                                              prefState.locale.languageCode ==
-                                                      'ar'
-                                                  ? 'EN'
-                                                  : 'ع',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                                color: textColor,
-                                              ),
-                                            ),
-                                            onPressed:
-                                                () => context
-                                                    .read<AppPreferencesCubit>()
-                                                    .setLocale(
-                                                      Locale(
-                                                        prefState
-                                                                    .locale
-                                                                    .languageCode ==
-                                                                'ar'
-                                                            ? 'en'
-                                                            : 'ar',
-                                                      ),
+                                          (context, prefState) => Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                tooltip: context.tr(
+                                                  'settings_theme',
+                                                ),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 34,
+                                                      minHeight: 34,
                                                     ),
+                                                padding: EdgeInsets.zero,
+                                                icon: Icon(
+                                                  prefState.themeMode ==
+                                                          ThemeMode.dark
+                                                      ? Icons
+                                                          .light_mode_outlined
+                                                      : Icons
+                                                          .dark_mode_outlined,
+                                                  size: 19,
+                                                  color: textColor,
+                                                ),
+                                                onPressed:
+                                                    () =>
+                                                        context
+                                                            .read<
+                                                              AppPreferencesCubit
+                                                            >()
+                                                            .toggleTheme(),
+                                              ),
+                                              IconButton(
+                                                tooltip: context.tr(
+                                                  'settings_language',
+                                                ),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 34,
+                                                      minHeight: 34,
+                                                    ),
+                                                padding: EdgeInsets.zero,
+                                                icon: Text(
+                                                  prefState
+                                                              .locale
+                                                              .languageCode ==
+                                                          'ar'
+                                                      ? 'EN'
+                                                      : 'ع',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w800,
+                                                    color: textColor,
+                                                  ),
+                                                ),
+                                                onPressed:
+                                                    () => context
+                                                        .read<
+                                                          AppPreferencesCubit
+                                                        >()
+                                                        .setLocale(
+                                                          Locale(
+                                                            prefState
+                                                                        .locale
+                                                                        .languageCode ==
+                                                                    'ar'
+                                                                ? 'en'
+                                                                : 'ar',
+                                                          ),
+                                                        ),
+                                              ),
+                                            ],
                                           ),
                                     ),
                                     notificationBell,
@@ -416,15 +477,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 indicator: BoxDecoration(
                                   color: cardBg,
                                   borderRadius: BorderRadius.circular(9),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: isDark ? 0.2 : 0.04,
-                                      ),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
                                 ),
                                 labelColor: textColor,
                                 unselectedLabelColor:

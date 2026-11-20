@@ -74,200 +74,194 @@ class _RegisterPageState extends State<RegisterPage> {
         title: Text(context.tr('create_account')),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.tr('join_verve'),
-                  style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: textColor,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  context.tr('register_sub'),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium!.copyWith(color: subtextColor),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Column(
-                    children: [
-                      LabelWithTextField(
-                        label: context.tr('username'),
-                        controller: usernameController,
-                        prefixIcon: Icons.person_outline_rounded,
-                        hintText: context.tr('username_hint'),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20.0,
+                vertical: 12.0,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.tr('join_verve'),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall!.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
                       ),
-                      const SizedBox(height: 16),
-                      LabelWithTextField(
-                        label: context.tr('email'),
-                        controller: emailController,
-                        prefixIcon: Icons.email_outlined,
-                        hintText: context.tr('email_hint'),
-                        keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      context.tr('register_sub'),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium!.copyWith(color: subtextColor),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: borderColor),
                       ),
-                      const SizedBox(height: 16),
-                      LabelWithTextField(
-                        label: context.tr('password'),
-                        controller: passwordController,
-                        prefixIcon: Icons.lock_outline_rounded,
-                        hintText: context.tr('password_min_hint'),
-                        obsecureText: _obscurePassword,
-                        validator: (value) {
-                          if (value == null || value.trim().length < 6) {
-                            return context.tr('password_too_short');
-                          }
-                          return null;
-                        },
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                      child: Column(
+                        children: [
+                          LabelWithTextField(
+                            label: context.tr('username'),
+                            controller: usernameController,
+                            prefixIcon: Icons.person_outline_rounded,
+                            hintText: context.tr('username_hint'),
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      BlocConsumer<AuthCubit, AuthState>(
-                        bloc: cubit,
-                        listenWhen:
-                            (previous, current) =>
-                                current is AuthDone || current is AuthError,
-                        listener: (context, state) {
-                          if (state is AuthDone) {
-                            _onAuthSucceeded(context);
-                          } else if (state is AuthError) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(context.trError(state.message)),
+                          const SizedBox(height: 16),
+                          LabelWithTextField(
+                            label: context.tr('email'),
+                            controller: emailController,
+                            prefixIcon: Icons.email_outlined,
+                            hintText: context.tr('email_hint'),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 16),
+                          LabelWithTextField(
+                            label: context.tr('password'),
+                            controller: passwordController,
+                            prefixIcon: Icons.lock_outline_rounded,
+                            hintText: context.tr('password_min_hint'),
+                            obsecureText: _obscurePassword,
+                            validator: (value) {
+                              if (value == null || value.trim().length < 6) {
+                                return context.tr('password_too_short');
+                              }
+                              return null;
+                            },
+                            suffixIcon: IconButton(
+                              tooltip: context.tr(
+                                _obscurePassword
+                                    ? 'show_password'
+                                    : 'hide_password',
                               ),
-                            );
-                          }
-                        },
-                        buildWhen:
-                            (previous, current) =>
-                                current is AuthLoading ||
-                                current is AuthError ||
-                                current is AuthDone,
-                        builder: (context, state) {
-                          if (state is AuthLoading) {
-                            return MainButton(isLoading: true);
-                          }
-                          return MainButton(
-                            text: context.tr('create_account'),
-                            onTap: () async {
-                              if (_formKey.currentState!.validate()) {
-                                await cubit.registerWithEmailAndPassword(
-                                  emailController.text.trim(),
-                                  passwordController.text,
-                                  usernameController.text.trim(),
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          BlocConsumer<AuthCubit, AuthState>(
+                            bloc: cubit,
+                            listenWhen:
+                                (previous, current) =>
+                                    current is AuthDone || current is AuthError,
+                            listener: (context, state) {
+                              if (state is AuthDone) {
+                                _onAuthSucceeded(context);
+                              } else if (state is AuthError) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      context.trError(state.message),
+                                    ),
+                                  ),
                                 );
                               }
                             },
-                          );
-                        },
+                            buildWhen:
+                                (previous, current) =>
+                                    current is AuthLoading ||
+                                    current is AuthError ||
+                                    current is AuthDone,
+                            builder: (context, state) {
+                              if (state is AuthLoading) {
+                                return MainButton(isLoading: true);
+                              }
+                              return MainButton(
+                                text: context.tr('create_account'),
+                                onTap: () async {
+                                  if (_formKey.currentState!.validate()) {
+                                    await cubit.registerWithEmailAndPassword(
+                                      emailController.text.trim(),
+                                      passwordController.text,
+                                      usernameController.text.trim(),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      context.tr('already_have_account'),
-                      style: TextStyle(color: subtextColor),
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        context.tr('sign_in'),
-                        style: const TextStyle(
-                          color: AppColors.accentColor,
-                          fontWeight: FontWeight.w700,
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          context.tr('already_have_account'),
+                          style: TextStyle(color: subtextColor),
                         ),
-                      ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            context.tr('sign_in'),
+                            style: const TextStyle(
+                              color: AppColors.accentColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    BlocConsumer<AuthCubit, AuthState>(
+                      bloc: cubit,
+                      listenWhen:
+                          (previous, current) =>
+                              current is GoogleAuthDone ||
+                              current is GoogleAuthError,
+                      listener: (context, state) {
+                        if (state is GoogleAuthDone) {
+                          _onAuthSucceeded(context);
+                        } else if (state is GoogleAuthError) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(context.trError(state.message)),
+                            ),
+                          );
+                        }
+                      },
+                      buildWhen:
+                          (previous, current) =>
+                              current is GoogleAuthenticating ||
+                              current is GoogleAuthError ||
+                              current is GoogleAuthDone,
+                      builder: (context, state) {
+                        if (state is GoogleAuthenticating) {
+                          return SocialMediaButton(isLoading: true);
+                        }
+                        return SocialMediaButton(
+                          text: context.tr('continue_google'),
+                          imgUrl: ImageUtils.googleImgUrl,
+                          onTap:
+                              () async => await cubit.authenticateWithGoogle(),
+                        );
+                      },
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                BlocConsumer<AuthCubit, AuthState>(
-                  bloc: cubit,
-                  listenWhen:
-                      (previous, current) =>
-                          current is GoogleAuthDone ||
-                          current is GoogleAuthError,
-                  listener: (context, state) {
-                    if (state is GoogleAuthDone) {
-                      _onAuthSucceeded(context);
-                    } else if (state is GoogleAuthError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(context.trError(state.message))),
-                      );
-                    }
-                  },
-                  buildWhen:
-                      (previous, current) =>
-                          current is GoogleAuthenticating ||
-                          current is GoogleAuthError ||
-                          current is GoogleAuthDone,
-                  builder: (context, state) {
-                    if (state is GoogleAuthenticating) {
-                      return SocialMediaButton(isLoading: true);
-                    }
-                    return SocialMediaButton(
-                      text: context.tr('continue_google'),
-                      imgUrl: ImageUtils.googleImgUrl,
-                      onTap: () async => await cubit.authenticateWithGoogle(),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                BlocConsumer<AuthCubit, AuthState>(
-                  bloc: cubit,
-                  listenWhen:
-                      (previous, current) =>
-                          current is FacebookAuthDone ||
-                          current is FacebookAuthError,
-                  listener: (context, state) {
-                    if (state is FacebookAuthDone) {
-                      _onAuthSucceeded(context);
-                    } else if (state is FacebookAuthError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(context.trError(state.message))),
-                      );
-                    }
-                  },
-                  builder: (context, state) {
-                    if (state is FacebookAuthenticating) {
-                      return SocialMediaButton(isLoading: true);
-                    }
-                    return SocialMediaButton(
-                      text: context.tr('continue_facebook'),
-                      imgUrl: ImageUtils.faceBookImgUrl,
-                      onTap: () async => await cubit.authenticateWithFacebook(),
-                    );
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         ),

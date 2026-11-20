@@ -17,6 +17,8 @@ class AppLocalizations {
     'en': {
       // Navigation
       'nav_discover': 'Discover',
+      'show_password': 'Show password',
+      'hide_password': 'Hide password',
       'nav_cart': 'Cart',
       'nav_saved': 'Saved',
       'nav_account': 'Account',
@@ -170,6 +172,8 @@ class AppLocalizations {
     'ar': {
       // Navigation
       'nav_discover': 'استكشاف',
+      'show_password': 'إظهار كلمة المرور',
+      'hide_password': 'إخفاء كلمة المرور',
       'nav_cart': 'السلة',
       'nav_saved': 'المفضلة',
       'nav_account': 'حسابي',

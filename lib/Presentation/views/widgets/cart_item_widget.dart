@@ -1,3 +1,4 @@
+import 'package:e_commerce_app/domain/entities/product.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app/Presentation/controller/cart_cubit/cart_cubit.dart';
 import 'package:e_commerce_app/Presentation/views/widgets/counter_widget.dart';
@@ -98,24 +99,25 @@ class CartItemWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: softBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${context.tr('size_label')}: ${cartItem.size.name}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: subtextColor,
-                      fontWeight: FontWeight.w600,
+                if (cartItem.size != ProductSize.none)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: softBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${context.tr('size_label')}: ${cartItem.size.name}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: subtextColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

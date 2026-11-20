@@ -1,3 +1,4 @@
+import 'package:e_commerce_app/domain/entities/product.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:e_commerce_app/Presentation/controller/add_new_card_cubit/payment_methods_cubit.dart';
 import 'package:e_commerce_app/Presentation/controller/checkout_cubit/checkout_cubit.dart';
@@ -236,7 +237,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  chosenAddress.city,
+                  chosenAddress.recipient,
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
                     fontWeight: FontWeight.w700,
                     color: textColor,
@@ -244,7 +245,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${chosenAddress.city}, ${chosenAddress.country}',
+                  [
+                    [
+                      chosenAddress.building,
+                      chosenAddress.street,
+                    ].where((part) => part.isNotEmpty).join(' '),
+                    if (chosenAddress.unit.isNotEmpty)
+                      context.isArabic
+                          ? 'وحدة ${chosenAddress.unit}'
+                          : 'Unit ${chosenAddress.unit}',
+                    [
+                      chosenAddress.city,
+                      chosenAddress.postalCode,
+                      chosenAddress.country,
+                    ].where((part) => part.isNotEmpty).join(', '),
+                    chosenAddress.phone,
+                  ].where((line) => line.isNotEmpty).join('\n'),
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium!.copyWith(color: subtextColor),
@@ -398,7 +414,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${context.tr('size_label')}: ${cartItem.size.name}  •  ${context.tr('qty')}: ${cartItem.quantity}',
+                                      [
+                                        if (cartItem.size != ProductSize.none)
+                                          '${context.tr('size_label')}: ${cartItem.size.name}',
+                                        '${context.tr('qty')}: ${cartItem.quantity}',
+                                      ].join('  •  '),
                                       style: TextStyle(
                                         color: subtextColor,
                                         fontSize: 12,

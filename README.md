@@ -1,5 +1,16 @@
 # Verve Store
 
+**Flutter e-commerce application** featuring a multi-category product catalog, product search/details, favorites, shopping cart, checkout preview/order handling, bilingual English/Arabic UI and native light/dark themes.
+
+**Explore:** [Live storefront](https://verve-store-delta.vercel.app/) · [14-screen portfolio gallery](https://ahmed-gamal-portfolio-alpha.vercel.app/#work)
+
+> **Demo note:** Browsing is public, while cart and checkout require sign-in. The documented payment method is cash on delivery; do not submit a real order just to test the showcase.
+
+**Core technologies:** Flutter, Dart, Firebase/Firestore, Vercel server-side Node API.
+
+---
+
+
 Flutter storefront with Arabic/English, Firebase authentication and private data, and a Vercel Node API for trusted order processing.
 
 [Open the web store](https://verve-store-delta.vercel.app/) · [Download the Android test APK](https://verve-store-delta.vercel.app/download/android)

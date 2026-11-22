@@ -73,3 +73,14 @@ Vercel builds Flutter with `scripts/build-web.sh`, serves `build/web`, and bundl
 The former Firebase project is not migrated or modified. If its owner grants access later, `scripts/cleanup-legacy.mjs` provides a **dry run** for locating password fields and saved card records. With a correctly scoped `GOOGLE_APPLICATION_CREDENTIALS` and explicit `FIREBASE_PROJECT_ID`, run it without arguments first; `--apply` removes those fields/records. Export and review needed data before applying. Do not point the new store at legacy data without a separate schema migration.
 
 Security Rules are a reviewed prototype with executable ownership, schema and financial-write denial tests; test them again when the data model changes. Server Admin SDK access bypasses Firestore rules, so server authorization and secret handling are also required.
+
+---
+
+## Developer & contact
+
+**Ahmed Gamal Saeed** — Software Developer focused on Flutter and modern web applications.
+
+- [Portfolio — selected projects and demos](https://ahmed-gamal-portfolio-alpha.vercel.app/)
+- [LinkedIn — professional profile](https://www.linkedin.com/in/ahmed-gamal-717b54450/)
+- [GitHub — source code](https://github.com/gamal6507-ops)
+
